@@ -3,6 +3,7 @@
 import { DESIGN, MAX_DPR } from './config.js';
 import { createState } from './state.js';
 import { renderScene } from './render.js';
+import { createHud } from './hud.js';
 
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
@@ -12,6 +13,13 @@ const view = { cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l
 let showDebug = false;
 
 const state = createState();
+
+// Manually fetching water from jugs — the early gameplay action.
+// Becomes renewable via rain later (S8+). Amount tuned in the feel pass (S10).
+const WATER_PER_COLLECT = 1;
+const hud = createHud({
+  onCollectWater() { state.water += WATER_PER_COLLECT; },
+});
 
 // --- Layout: fit design aspect inside usable area (viewport minus insets) ---
 function readInsets() {
@@ -71,6 +79,7 @@ function frame(now) {
     acc -= STEP;
   }
   renderScene(ctx, state);
+  hud.update(state);
   updateDebug(now);
   requestAnimationFrame(frame);
 }

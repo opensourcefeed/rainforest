@@ -45,6 +45,51 @@ html, body {
   pointer-events: none;            /* children opt back in */
 }
 
+/* --- HUD ---------------------------------------------------------------- */
+.hud-stat {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  pointer-events: auto;
+}
+.hud-icon { font-size: 18px; }
+.hud-value { min-width: 1.5em; text-align: right; font-variant-numeric: tabular-nums; }
+
+.hud-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.hud-btn {
+  pointer-events: auto;
+  min-height: 52px;          /* comfortably tappable on every device */
+  min-width: 140px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 999px;
+  background: #2f7fd6;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.hud-btn:active { transform: translateY(1px); filter: brightness(0.95); }
+
 #debug {
   position: fixed;
   top: calc(var(--safe-t) + 8px);

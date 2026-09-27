@@ -9,7 +9,10 @@ export function createState() {
       plots.push({ col, row, planted: false });
     }
   }
-  return { plots };
+  return {
+    water: 5, // main early currency (jugs). Renewable via rain later.
+    plots,
+  };
 }
 
 // Rectangle (in design units) for a plot at a given column/row.
