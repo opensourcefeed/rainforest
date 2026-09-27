@@ -31,7 +31,7 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       quickly and cheaply (teaches, doesn't punish). Visible outcome per plant.
 - [x] **S6 — The three meters.** Hidden soil / shade / humidity meters; living plants nudge
       them up; survival chance reads from them. Debug overlay shows the meter values.
-- [ ] **S7 — Growth over time.** Surviving plants grow through visible stages; mature plants
+- [x] **S7 — Growth over time.** Surviving plants grow through visible stages; mature plants
       contribute more to meters.
 - [ ] **S8 — Stage 1→2 transition.** When meters cross a threshold, the scene shifts toward
       scrubland (cactus/acacia/date palm); new seed types unlock.

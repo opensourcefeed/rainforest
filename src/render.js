@@ -69,19 +69,33 @@ function drawPlant(ctx, r, plant) {
     return;
   }
 
-  // settling (slightly translucent) or alive (full green)
+  // settling (slightly translucent) or alive (full green). Alive plants scale
+  // with growth: a seedling grows into a fuller plant.
+  const growth = plant.growth || 0;
+  const scale = plant.status === 'settling' ? 0.5 : 0.45 + 0.55 * growth;
+  const h = (r.h * 0.55) * scale;
+  const leafR = 4 + 5 * (plant.status === 'settling' ? 0 : growth);
+
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
   ctx.strokeStyle = '#3f8f3a';
   ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(cx, baseY);
-  ctx.lineTo(cx, baseY - stemH);
+  ctx.lineTo(cx, baseY - h);
   ctx.stroke();
+
   ctx.fillStyle = '#4faf47';
+  // Base pair of leaves.
   for (const dir of [-1, 1]) {
     ctx.beginPath();
-    ctx.ellipse(cx + dir * 4, baseY - stemH * 0.7, 5, 3, dir * 0.6, 0, Math.PI * 2);
+    ctx.ellipse(cx + dir * leafR * 0.8, baseY - h * 0.7, leafR, leafR * 0.6, dir * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // A canopy blob appears as the plant matures.
+  if (growth > 0.5 && plant.status === 'alive') {
+    ctx.beginPath();
+    ctx.arc(cx, baseY - h, leafR * 1.4 * growth, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;

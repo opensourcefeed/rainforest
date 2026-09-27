@@ -12,9 +12,12 @@ const DEAD_CLEAR_TIME = 1.0; // a dead plant lingers (visible), then the plot fr
 export const BASE_SURVIVAL = 0.25;
 export const MAX_SURVIVAL = 0.9;
 
-// How fast a single living plant enriches each meter (per second). Small, so a
+// How fast a single MATURE plant enriches each meter (per second). Small, so a
 // grove builds the environment gradually. Tuned in the feel pass (S10).
 const METER_GAIN = 0.01;
+
+// Seconds for a survivor to grow from sprout to mature.
+const GROW_TIME = 12;
 
 export function avgMeter(state) {
   const m = state.meters;
@@ -33,7 +36,7 @@ export function plantSeed(state, index) {
 
   state.water -= SEED_COST;
   plot.planted = true;
-  plot.plant = { status: 'settling', age: 0 };
+  plot.plant = { status: 'settling', age: 0, growth: 0 };
   return true;
 }
 
@@ -52,7 +55,9 @@ export function updateWorld(state, dt) {
       plot.planted = false; // free the plot to replant cheaply
       plot.plant = null;
     } else if (p.status === 'alive') {
-      const g = METER_GAIN * dt;
+      p.growth = Math.min(1, p.growth + dt / GROW_TIME);
+      // Young plants contribute a little, mature plants the full amount.
+      const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth);
       m.soil = Math.min(1, m.soil + g);
       m.shade = Math.min(1, m.shade + g);
       m.humidity = Math.min(1, m.humidity + g);
