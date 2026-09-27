@@ -1,10 +1,11 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
-import { createState, plotAt } from './state.js';
+import { plotAt } from './state.js';
 import { plantSeed, updateWorld, survivalChance } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
+import { loadGame, saveGame } from './save.js';
 
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
@@ -13,7 +14,8 @@ const ctx = canvas.getContext('2d');
 const view = { cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l: 0 } };
 let showDebug = false;
 
-const state = createState();
+// Restore the save (with offline progress applied) or start fresh.
+const state = loadGame();
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later (S8+). Amount tuned in the feel pass (S10).
@@ -131,6 +133,12 @@ if (window.visualViewport) {
   visualViewport.addEventListener('resize', scheduleLayout);
   visualViewport.addEventListener('scroll', scheduleLayout);
 }
+
+// Persist periodically and whenever the app is backgrounded/closed, so the
+// saved timestamp is fresh for offline-progress on the next resume.
+setInterval(() => saveGame(state), 5000);
+addEventListener('visibilitychange', () => { if (document.hidden) saveGame(state); });
+addEventListener('pagehide', () => saveGame(state));
 
 layout();
 requestAnimationFrame(frame);

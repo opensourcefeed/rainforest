@@ -35,7 +35,7 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       contribute more to meters.
 - [x] **S8 — Stage 1→2 transition.** When meters cross a threshold, the scene shifts toward
       scrubland (cactus/acacia/date palm); new seed types unlock.
-- [ ] **S9 — Save + offline progress.** Persist state (localStorage for now); on load,
+- [x] **S9 — Save + offline progress.** Persist state (localStorage for now); on load,
       compute idle progress from the saved timestamp.
 - [ ] **S10 — First-run feel pass.** Tune early economy so the opening is fun, not
       frustrating. This is Phase 0's go/no-go question.
