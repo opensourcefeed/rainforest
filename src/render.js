@@ -47,15 +47,30 @@ export function renderScene(ctx, state) {
     roundRect(ctx, r.x, r.y, r.w, r.h, 6);
     ctx.fill();
     ctx.stroke();
-    if (p.planted && p.plant?.alive) drawSeedling(ctx, r);
+    if (p.plant) drawPlant(ctx, r, p.plant);
   }
 }
 
-// A small sprout centered in the plot. Grows in later slices.
-function drawSeedling(ctx, r) {
+// A small sprout centered in the plot, drawn per lifecycle state.
+function drawPlant(ctx, r, plant) {
   const cx = r.x + r.w / 2;
   const baseY = r.y + r.h * 0.72;
   const stemH = r.h * 0.28;
+
+  if (plant.status === 'dead') {
+    // Withered: drooped brown stem, no leaves.
+    ctx.strokeStyle = '#7a5a34';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx, baseY);
+    ctx.quadraticCurveTo(cx + 3, baseY - stemH * 0.6, cx + 8, baseY - stemH * 0.5);
+    ctx.stroke();
+    return;
+  }
+
+  // settling (slightly translucent) or alive (full green)
+  ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
   ctx.strokeStyle = '#3f8f3a';
   ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
@@ -63,11 +78,11 @@ function drawSeedling(ctx, r) {
   ctx.moveTo(cx, baseY);
   ctx.lineTo(cx, baseY - stemH);
   ctx.stroke();
-  // two little leaves
   ctx.fillStyle = '#4faf47';
   for (const dir of [-1, 1]) {
     ctx.beginPath();
     ctx.ellipse(cx + dir * 4, baseY - stemH * 0.7, 5, 3, dir * 0.6, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.globalAlpha = 1;
 }

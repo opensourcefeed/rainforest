@@ -2,7 +2,7 @@
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
 import { createState, plotAt } from './state.js';
-import { plantSeed } from './game.js';
+import { plantSeed, updateWorld } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
 
@@ -66,8 +66,7 @@ let acc = 0;
 let last = performance.now();
 
 function update(dt) {
-  // No dynamics yet — added from S5 onward. dt is in seconds.
-  void dt;
+  updateWorld(state, dt);
 }
 
 function frame(now) {
