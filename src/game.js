@@ -24,6 +24,24 @@ export function avgMeter(state) {
   return (m.soil + m.shade + m.humidity) / 3;
 }
 
+// Progression stages, keyed off the environment average. Phase 0 covers 1–2.
+export const STAGES = [
+  { name: 'Barren desert', min: 0 },
+  { name: 'Scrubland', min: 0.2 },
+];
+
+export function currentStage(state) {
+  const a = avgMeter(state);
+  let index = 0;
+  for (let i = 0; i < STAGES.length; i++) if (a >= STAGES[i].min) index = i;
+  return { index, name: STAGES[index].name };
+}
+
+// 0..1 greening progress used to tint the scene from desert toward scrubland.
+export function greening(state) {
+  return Math.min(1, avgMeter(state) / 0.45);
+}
+
 export function survivalChance(state) {
   return BASE_SURVIVAL + avgMeter(state) * (MAX_SURVIVAL - BASE_SURVIVAL);
 }

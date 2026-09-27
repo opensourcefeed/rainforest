@@ -2,19 +2,27 @@
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
 import { DESIGN, HORIZON } from './config.js';
 import { plotRect } from './state.js';
+import { greening } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
 }
 
+// Linear interpolation between two [r,g,b] colors -> css string.
+function mix(a, b, t) {
+  const c = a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
 export function renderScene(ctx, state) {
   const { w, h } = DESIGN;
+  const g = greening(state); // 0 desert .. 1 scrubland
 
-  // Sky
+  // Sky — hazy desert warms into a cooler, fresher scrubland sky.
   const sky = ctx.createLinearGradient(0, 0, 0, HORIZON);
-  sky.addColorStop(0, '#8fb7d6');
-  sky.addColorStop(1, '#e7d6a8');
+  sky.addColorStop(0, mix([143, 183, 214], [120, 175, 210], g));
+  sky.addColorStop(1, mix([231, 214, 168], [200, 214, 178], g));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, HORIZON);
 
@@ -24,10 +32,10 @@ export function renderScene(ctx, state) {
   ctx.arc(w * 0.74, h * 0.16, 42, 0, Math.PI * 2);
   ctx.fill();
 
-  // Sand
+  // Ground — bare sand greens toward scrub soil as the environment recovers.
   const sand = ctx.createLinearGradient(0, HORIZON, 0, h);
-  sand.addColorStop(0, '#d9b579');
-  sand.addColorStop(1, '#b8894d');
+  sand.addColorStop(0, mix([217, 181, 121], [150, 168, 96], g));
+  sand.addColorStop(1, mix([184, 137, 77], [120, 130, 70], g));
   ctx.fillStyle = sand;
   ctx.fillRect(0, HORIZON, w, h - HORIZON);
 

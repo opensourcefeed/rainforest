@@ -46,6 +46,28 @@ html, body {
 }
 
 /* --- HUD ---------------------------------------------------------------- */
+.hud-stage {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 14px;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.hud-stage.flash { animation: stageFlash 1.4s ease-out; }
+@keyframes stageFlash {
+  0% { transform: translateX(-50%) scale(1.25); background: rgba(79, 175, 71, 0.85); }
+  100% { transform: translateX(-50%) scale(1); background: rgba(0, 0, 0, 0.32); }
+}
+
+
 .hud-stat {
   position: absolute;
   top: 12px;

@@ -33,7 +33,7 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       them up; survival chance reads from them. Debug overlay shows the meter values.
 - [x] **S7 — Growth over time.** Surviving plants grow through visible stages; mature plants
       contribute more to meters.
-- [ ] **S8 — Stage 1→2 transition.** When meters cross a threshold, the scene shifts toward
+- [x] **S8 — Stage 1→2 transition.** When meters cross a threshold, the scene shifts toward
       scrubland (cactus/acacia/date palm); new seed types unlock.
 - [ ] **S9 — Save + offline progress.** Persist state (localStorage for now); on load,
       compute idle progress from the saved timestamp.
@@ -41,4 +41,10 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       frustrating. This is Phase 0's go/no-go question.
 
 ## Notes / decisions
-- (record any non-obvious choices here as we go)
+- Stack: zero-build vanilla JS/Canvas because the environment has Node but no
+  npm/npx/pnpm/yarn. Migrate to Vite before Capacitor (Phase 2).
+- Modules: config (constants) · state (data + geometry) · game (rules/verbs +
+  world update) · render (canvas draw) · hud (DOM overlay) · main (shell/loop).
+- S8 ships the *visible* stage transition (scene greening + stage banner). Actual
+  distinct scrubland seed types (cactus/acacia/date palm) are deferred to Phase 1;
+  Phase 0 only needs to prove the progression feels good.
