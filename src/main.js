@@ -2,7 +2,7 @@
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
 import { plotAt } from './state.js';
-import { plantSeed, updateWorld, survivalChance } from './game.js';
+import { plantSeed, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
 import { loadGame, saveGame } from './save.js';
@@ -18,8 +18,7 @@ let showDebug = false;
 const state = loadGame();
 
 // Manually fetching water from jugs — the early gameplay action.
-// Becomes renewable via rain later (S8+). Amount tuned in the feel pass (S10).
-const WATER_PER_COLLECT = 1;
+// Becomes renewable via rain later. Amount tuned in the feel pass (S10).
 const hud = createHud({
   onCollectWater() { state.water += WATER_PER_COLLECT; },
 });

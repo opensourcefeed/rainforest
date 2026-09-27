@@ -37,8 +37,22 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       scrubland (cactus/acacia/date palm); new seed types unlock.
 - [x] **S9 — Save + offline progress.** Persist state (localStorage for now); on load,
       compute idle progress from the saved timestamp.
-- [ ] **S10 — First-run feel pass.** Tune early economy so the opening is fun, not
+- [x] **S10 — First-run feel pass.** Tune early economy so the opening is fun, not
       frustrating. This is Phase 0's go/no-go question.
+
+## S10 feel-pass outcome
+Simulated an early session (steady tapping + auto-plant, real survival RNG). First-pass
+values reached Scrubland in ~20s — too fast, the desert struggle barely existed. Retuned:
+slower meter gain (0.0006), longer growth (25s), seed cost 2 (water is a real early
+constraint), gentle trickle (0.08/s) so no hard-stall. Now: Scrubland ~1–1.7 min, fully
+green ~1.5–2.3 min, with more early deaths than survivors — struggle present, recovery
+rewarding. **Caveat:** the sim is a proxy. The real go/no-go is a playtest on a device;
+these constants are a first honest guess, not final balance.
+
+## Phase 0 status
+All 10 slices done — a playable stages 1–2 prototype. Next: real-device playtest to answer
+"is the early struggle fun?", then Phase 1 (remaining stages, rain, animals, real art) after
+migrating to Vite for the Capacitor wrap.
 
 ## Notes / decisions
 - Stack: zero-build vanilla JS/Canvas because the environment has Node but no

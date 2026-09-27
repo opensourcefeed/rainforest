@@ -1,6 +1,7 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
 import { DESIGN, HORIZON, GRID } from './config.js';
+import { START_WATER } from './game.js';
 
 export function createState() {
   const plots = [];
@@ -10,7 +11,7 @@ export function createState() {
     }
   }
   return {
-    water: 5, // main early currency (jugs). Renewable via rain later.
+    water: START_WATER, // main early currency (jugs). Renewable via rain later.
     // Hidden environment meters, 0..1. Living plants raise them; survival
     // chance reads from them, so the desert bootstraps itself.
     meters: { soil: 0, shade: 0, humidity: 0 },

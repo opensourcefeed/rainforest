@@ -34,9 +34,10 @@ export function createHud({ onCollectWater }) {
 
   return {
     update(state) {
-      if (state.water !== lastWater) {
-        waterValue.textContent = Math.floor(state.water);
-        lastWater = state.water;
+      const shownWater = Math.floor(state.water);
+      if (shownWater !== lastWater) {
+        waterValue.textContent = shownWater;
+        lastWater = shownWater;
       }
       const s = currentStage(state);
       if (s.index !== lastStage) {

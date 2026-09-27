@@ -1,7 +1,7 @@
 // Gameplay rules and actions. state.js holds data + geometry; this holds the
 // verbs and the per-frame world update.
 
-export const SEED_COST = 1; // cheap on purpose — early failure must not punish
+export const SEED_COST = 2; // cheap, but enough that water is a real early constraint
 
 // Plant lifecycle timing (seconds). Failure is quick so the player learns fast.
 const SETTLE_TIME = 1.2;     // seedling settles, then survival is rolled
@@ -13,11 +13,18 @@ export const BASE_SURVIVAL = 0.25;
 export const MAX_SURVIVAL = 0.9;
 
 // How fast a single MATURE plant enriches each meter (per second). Small, so a
-// grove builds the environment gradually. Tuned in the feel pass (S10).
-const METER_GAIN = 0.01;
+// grove builds the environment gradually — progression should be felt over
+// minutes of tending, not seconds. (Feel pass, S10.)
+const METER_GAIN = 0.0006;
 
 // Seconds for a survivor to grow from sprout to mature.
-const GROW_TIME = 12;
+const GROW_TIME = 25;
+
+// Slow passive water trickle so a player is never hard-stuck at 0 water, plus
+// how much a manual collect grants. (Feel pass, S10.)
+export const WATER_REGEN_PER_SEC = 0.08;
+export const WATER_PER_COLLECT = 3;
+export const START_WATER = 8;
 
 export function avgMeter(state) {
   const m = state.meters;
@@ -61,6 +68,7 @@ export function plantSeed(state, index) {
 // Advance every plant and let the living ones enrich the environment.
 export function updateWorld(state, dt) {
   const m = state.meters;
+  state.water += WATER_REGEN_PER_SEC * dt; // slow trickle — never hard-stuck
   for (const plot of state.plots) {
     const p = plot.plant;
     if (!p) continue;
