@@ -1,0 +1,61 @@
+:root {
+  /* Safe-area insets, with 0 fallback on devices/browsers without notches. */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --sand: #c99a5b;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;                 /* a game never page-scrolls */
+  background: #1b1206;              /* letterbox color behind the play field */
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;              /* we handle taps ourselves; no double-tap zoom */
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Canvas is sized in JS (DPR-aware). CSS just keeps it from overflowing. */
+#game {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* HUD anchors to the safe area, on top of the play field. */
+#hud {
+  position: fixed;
+  top: var(--safe-t);
+  right: var(--safe-r);
+  bottom: var(--safe-b);
+  left: var(--safe-l);
+  pointer-events: none;            /* children opt back in */
+}
+
+#debug {
+  position: fixed;
+  top: calc(var(--safe-t) + 8px);
+  left: calc(var(--safe-l) + 8px);
+  margin: 0;
+  padding: 8px 10px;
+  font: 12px/1.45 ui-monospace, monospace;
+  color: #0f0;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  white-space: pre;
+  pointer-events: none;
+  z-index: 10;
+}

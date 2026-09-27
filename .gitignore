@@ -1,0 +1,23 @@
+# Dependencies (once a package manager is available)
+node_modules/
+
+# Build output
+dist/
+build/
+www/
+
+# Capacitor / native (added in Phase 2)
+android/
+ios/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs / env
+*.log
+.env
+.env.local
