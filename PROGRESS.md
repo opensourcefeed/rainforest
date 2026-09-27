@@ -26,7 +26,7 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       grid of empty plots on the desert.
 - [x] **S3 — Water currency + HUD.** Water counter anchored to a safe-area edge; a "collect
       water" action; number goes up. HUD stays tappable at all sizes.
-- [ ] **S4 — Plant a seed.** Tap a plot, spend water, a seedling appears. Seeds are cheap.
+- [x] **S4 — Plant a seed.** Tap a plot, spend water, a seedling appears. Seeds are cheap.
 - [ ] **S5 — Survival roll.** Each planted seed has a survival chance; most die early,
       quickly and cheaply (teaches, doesn't punish). Visible outcome per plant.
 - [ ] **S6 — The three meters.** Hidden soil / shade / humidity meters; living plants nudge

@@ -1,7 +1,8 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
-import { createState } from './state.js';
+import { createState, plotAt } from './state.js';
+import { plantSeed } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
 
@@ -112,7 +113,9 @@ addEventListener('keydown', (e) => { if (e.key === 'd' || e.key === 'D') toggleD
 addEventListener('pointerdown', (e) => {
   if (e.clientX < 80 && e.clientY < 80) { toggleDebug(); return; }
   const p = eventToDesign(e);
-  if (p) void p; // taps handled from S4 (plant a seed)
+  if (!p) return;
+  const plotIndex = plotAt(state, p.x, p.y);
+  if (plotIndex !== -1) plantSeed(state, plotIndex);
 });
 
 let relayoutQueued = false;

@@ -41,11 +41,33 @@ export function renderScene(ctx, state) {
   // Planting plots
   for (const p of state.plots) {
     const r = plotRect(p.col, p.row);
-    ctx.fillStyle = 'rgba(90, 62, 30, 0.18)';
+    ctx.fillStyle = p.planted ? 'rgba(60, 45, 22, 0.30)' : 'rgba(90, 62, 30, 0.18)';
     ctx.strokeStyle = 'rgba(74, 58, 36, 0.55)';
     ctx.lineWidth = 1.5;
     roundRect(ctx, r.x, r.y, r.w, r.h, 6);
     ctx.fill();
     ctx.stroke();
+    if (p.planted && p.plant?.alive) drawSeedling(ctx, r);
+  }
+}
+
+// A small sprout centered in the plot. Grows in later slices.
+function drawSeedling(ctx, r) {
+  const cx = r.x + r.w / 2;
+  const baseY = r.y + r.h * 0.72;
+  const stemH = r.h * 0.28;
+  ctx.strokeStyle = '#3f8f3a';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx, baseY);
+  ctx.lineTo(cx, baseY - stemH);
+  ctx.stroke();
+  // two little leaves
+  ctx.fillStyle = '#4faf47';
+  for (const dir of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(cx + dir * 4, baseY - stemH * 0.7, 5, 3, dir * 0.6, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
