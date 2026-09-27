@@ -2,7 +2,7 @@
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
 import { createState, plotAt } from './state.js';
-import { plantSeed, updateWorld } from './game.js';
+import { plantSeed, updateWorld, survivalChance } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
 
@@ -95,11 +95,13 @@ function updateDebug(now) {
   }
   if (!showDebug) return;
   const i = view.insets;
+  const m = state.meters;
   debugEl.textContent =
     `field ${view.cssW}x${view.cssH}  ar ${(view.cssW / view.cssH).toFixed(3)}\n` +
     `dpr ${view.dpr}  scale ${view.scale.toFixed(3)}\n` +
     `insets t${i.t} r${i.r} b${i.b} l${i.l}\n` +
-    `fps ${fps}`;
+    `soil ${m.soil.toFixed(2)} shade ${m.shade.toFixed(2)} humid ${m.humidity.toFixed(2)}\n` +
+    `survival ${(survivalChance(state) * 100).toFixed(0)}%  fps ${fps}`;
 }
 
 // --- Input & wiring --------------------------------------------------------

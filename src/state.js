@@ -11,6 +11,9 @@ export function createState() {
   }
   return {
     water: 5, // main early currency (jugs). Renewable via rain later.
+    // Hidden environment meters, 0..1. Living plants raise them; survival
+    // chance reads from them, so the desert bootstraps itself.
+    meters: { soil: 0, shade: 0, humidity: 0 },
     plots,
   };
 }

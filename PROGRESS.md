@@ -29,7 +29,7 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
 - [x] **S4 — Plant a seed.** Tap a plot, spend water, a seedling appears. Seeds are cheap.
 - [x] **S5 — Survival roll.** Each planted seed has a survival chance; most die early,
       quickly and cheaply (teaches, doesn't punish). Visible outcome per plant.
-- [ ] **S6 — The three meters.** Hidden soil / shade / humidity meters; living plants nudge
+- [x] **S6 — The three meters.** Hidden soil / shade / humidity meters; living plants nudge
       them up; survival chance reads from them. Debug overlay shows the meter values.
 - [ ] **S7 — Growth over time.** Surviving plants grow through visible stages; mature plants
       contribute more to meters.
