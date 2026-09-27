@@ -22,7 +22,7 @@ Toggle the on-screen debug overlay with the `D` key (or tap the top-left corner)
       container: portrait play field, DPR-aware canvas, safe-area insets, visualViewport
       resize handling, debug overlay (viewport size, DPR, aspect, insets, FPS). No gameplay
       yet — this is the responsive scaffold CLAUDE.md requires from day one.
-- [ ] **S2 — Game loop + tile grid.** Fixed-timestep update/render loop; draw the planting
+- [x] **S2 — Game loop + tile grid.** Fixed-timestep update/render loop; draw the planting
       grid of empty plots on the desert.
 - [ ] **S3 — Water currency + HUD.** Water counter anchored to a safe-area edge; a "collect
       water" action; number goes up. HUD stays tappable at all sizes.
