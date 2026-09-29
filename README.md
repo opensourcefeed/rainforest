@@ -17,11 +17,22 @@ Press `D` (or tap the top-left corner) to toggle the debug overlay.
 
 ## Deploy (GitHub Pages)
 
-The prototype is a static site (no build step), so GitHub Pages serves it directly. It's
-hosted from a repo in the `opensourcefeed` GitHub org, under the org's custom domain:
+Two git remotes: **`origin`** (GitLab, source) and **`github`** (GitHub, `opensourcefeed`
+org — also serves the page). Deploy with:
 
-- Enable **Settings → Pages → Deploy from a branch → `main` / `/ (root)`**.
-- URL is the org domain + repo name: `https://www.opensourcefeed.org/<repo-name>/`.
+```
+./deploy.sh "commit message"   # commit + push main to both remotes, then deploy
+./deploy.sh                    # no commit; push current main + deploy
+```
+
+The script pushes `main` (source) to both remotes and publishes the static site (index.html,
+src/, .nojekyll) to the **`gh-pages`** branch on `github`. It's zero-build, so "build" just
+stages the web files.
+
+One-time GitHub setup: **Settings → Pages → Source: "Deploy from a branch" → `gh-pages` /
+`/ (root)`**. Then it's live at `https://www.opensourcefeed.org/<repo-name>/` (the subpath is
+the repo name).
+
 - `.nojekyll` disables Jekyll (pure static). Do **not** add a `CNAME` file here — the custom
   domain is set on the org's `opensourcefeed.github.io` repo and applies to project pages
   automatically.
