@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount } from './game.js';
+import { currentStage, stageProgress, livingCount, SEED_COST } from './game.js';
 
 export function createHud({ onCollectWater }) {
   const root = document.getElementById('hud');
@@ -29,6 +29,11 @@ export function createHud({ onCollectWater }) {
   living.className = 'hud-stat hud-stat-living';
   living.innerHTML = `<span class="hud-icon">🌱</span><span class="hud-value" id="hud-living">0</span>`;
 
+  // Persistent one-line reminder of the core action + cost.
+  const hint = document.createElement('div');
+  hint.className = 'hud-hint';
+  hint.textContent = `Tap empty soil to plant · −${SEED_COST} 💧`;
+
   const actions = document.createElement('div');
   actions.className = 'hud-actions';
 
@@ -39,7 +44,7 @@ export function createHud({ onCollectWater }) {
   collect.addEventListener('click', onCollectWater);
   actions.appendChild(collect);
 
-  root.append(stage, eco, water, living, actions);
+  root.append(stage, eco, water, living, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const livingValue = root.querySelector('#hud-living');

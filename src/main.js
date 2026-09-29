@@ -6,6 +6,8 @@ import { plantSeed, updateWorld, survivalChance, WATER_PER_COLLECT } from './gam
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
 import { loadGame, saveGame } from './save.js';
+import { initOnboarding } from './onboarding.js';
+import { initBoot } from './boot.js';
 
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
@@ -140,4 +142,7 @@ addEventListener('visibilitychange', () => { if (document.hidden) saveGame(state
 addEventListener('pagehide', () => saveGame(state));
 
 layout();
+// Title screen first; on Start, show the first-run explainer (once). The game
+// loop runs behind the overlays so the desert is already rendered.
+initBoot(state, initOnboarding);
 requestAnimationFrame(frame);
