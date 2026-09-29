@@ -15,6 +15,9 @@ export function createState() {
     // Hidden environment meters, 0..1. Living plants raise them; survival
     // chance reads from them, so the desert bootstraps itself.
     meters: { soil: 0, shade: 0, humidity: 0 },
+    // Transient visual effects (floating text, survive/die pops). Aged and
+    // cleared in updateWorld; drawn by render. Not persisted.
+    fx: [],
     plots,
   };
 }

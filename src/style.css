@@ -126,6 +126,7 @@ html, body {
   font-size: 18px;
   pointer-events: auto;
 }
+.hud-stat-living { top: 54px; } /* stacked under the water counter */
 .hud-icon { font-size: 18px; }
 .hud-value { min-width: 1.5em; text-align: right; font-variant-numeric: tabular-nums; }
 

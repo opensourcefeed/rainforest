@@ -26,6 +26,21 @@ export const WATER_REGEN_PER_SEC = 0.08;
 export const WATER_PER_COLLECT = 3;
 export const START_WATER = 8;
 
+// Transient feedback effects. Kinds: 'chance' (survival % shown when planting),
+// 'survive' (green pop), 'die' (wither mark). Aged in updateWorld.
+export const FX_TTL = { chance: 1.1, survive: 0.9, die: 0.9 };
+
+function pushFx(state, col, row, kind, text) {
+  state.fx.push({ col, row, kind, text, age: 0, ttl: FX_TTL[kind] });
+}
+
+// Count of currently-living plants (for the HUD).
+export function livingCount(state) {
+  let n = 0;
+  for (const p of state.plots) if (p.plant && p.plant.status === 'alive') n++;
+  return n;
+}
+
 export function avgMeter(state) {
   const m = state.meters;
   return (m.soil + m.shade + m.humidity) / 3;
@@ -75,6 +90,8 @@ export function plantSeed(state, index) {
   state.water -= SEED_COST;
   plot.planted = true;
   plot.plant = { status: 'settling', age: 0, growth: 0 };
+  // Show the odds the player is up against, so failure reads as informative.
+  pushFx(state, plot.col, plot.row, 'chance', Math.round(survivalChance(state) * 100) + '%');
   return true;
 }
 
@@ -82,6 +99,13 @@ export function plantSeed(state, index) {
 export function updateWorld(state, dt) {
   const m = state.meters;
   state.water += WATER_REGEN_PER_SEC * dt; // slow trickle — never hard-stuck
+
+  // Age and expire transient effects.
+  for (let i = state.fx.length - 1; i >= 0; i--) {
+    state.fx[i].age += dt;
+    if (state.fx[i].age >= state.fx[i].ttl) state.fx.splice(i, 1);
+  }
+
   for (const plot of state.plots) {
     const p = plot.plant;
     if (!p) continue;
@@ -89,6 +113,7 @@ export function updateWorld(state, dt) {
 
     if (p.status === 'settling' && p.age >= SETTLE_TIME) {
       p.status = Math.random() < survivalChance(state) ? 'alive' : 'dead';
+      pushFx(state, plot.col, plot.row, p.status === 'alive' ? 'survive' : 'die');
       p.age = 0; // reuse as time-in-status
     } else if (p.status === 'dead' && p.age >= DEAD_CLEAR_TIME) {
       plot.planted = false; // free the plot to replant cheaply

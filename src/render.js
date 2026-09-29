@@ -58,6 +58,9 @@ export function renderScene(ctx, state) {
     if (p.plant) drawPlant(ctx, r, p.plant);
   }
 
+  // Transient feedback effects, on top of the plants.
+  drawFx(ctx, state);
+
   // Bottom control band — a subtle darkening so the HUD buttons have a footing
   // and read as chrome rather than floating over the grid.
   const bandTop = h - CONTROL_BAND;
@@ -66,6 +69,44 @@ export function renderScene(ctx, state) {
   band.addColorStop(1, 'rgba(0,0,0,0.22)');
   ctx.fillStyle = band;
   ctx.fillRect(0, bandTop, w, CONTROL_BAND);
+}
+
+// Draw transient feedback effects (survival %, survive/die pops).
+function drawFx(ctx, state) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const fx of state.fx) {
+    const r = plotRect(fx.col, fx.row);
+    const cx = r.x + r.w / 2;
+    const t = fx.age / fx.ttl; // 0..1
+    const alpha = 1 - t;
+
+    if (fx.kind === 'chance') {
+      // Odds float up from the plot and fade.
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px system-ui, sans-serif';
+      ctx.fillText(fx.text, cx, r.y - 6 - t * 16);
+    } else if (fx.kind === 'survive') {
+      // Expanding green ring + check.
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = '#5fd15a';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(cx, r.y + r.h / 2, 6 + t * (r.w * 0.5), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#5fd15a';
+      ctx.font = 'bold 18px system-ui, sans-serif';
+      ctx.fillText('✓', cx, r.y - 4 - t * 14);
+    } else if (fx.kind === 'die') {
+      // Red-brown cross drifting up and fading.
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#c65a3a';
+      ctx.font = 'bold 18px system-ui, sans-serif';
+      ctx.fillText('✕', cx, r.y - 4 - t * 14);
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 // A small sprout centered in the plot, drawn per lifecycle state.

@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress } from './game.js';
+import { currentStage, stageProgress, livingCount } from './game.js';
 
 export function createHud({ onCollectWater }) {
   const root = document.getElementById('hud');
@@ -25,6 +25,10 @@ export function createHud({ onCollectWater }) {
   water.className = 'hud-stat';
   water.innerHTML = `<span class="hud-icon">💧</span><span class="hud-value" id="hud-water">0</span>`;
 
+  const living = document.createElement('div');
+  living.className = 'hud-stat hud-stat-living';
+  living.innerHTML = `<span class="hud-icon">🌱</span><span class="hud-value" id="hud-living">0</span>`;
+
   const actions = document.createElement('div');
   actions.className = 'hud-actions';
 
@@ -35,9 +39,10 @@ export function createHud({ onCollectWater }) {
   collect.addEventListener('click', onCollectWater);
   actions.appendChild(collect);
 
-  root.append(stage, eco, water, actions);
+  root.append(stage, eco, water, living, actions);
 
   const waterValue = root.querySelector('#hud-water');
+  const livingValue = root.querySelector('#hud-living');
   const stageEl = root.querySelector('#hud-stage');
   const bars = {
     soil: eco.querySelector('[data-m="soil"]'),
@@ -47,6 +52,7 @@ export function createHud({ onCollectWater }) {
   const goalLabel = eco.querySelector('#eco-goal-label');
   const goalPct = eco.querySelector('#eco-goal-pct');
   let lastWater = null;
+  let lastLiving = null;
   let lastStage = -1;
 
   return {
@@ -55,6 +61,12 @@ export function createHud({ onCollectWater }) {
       if (shownWater !== lastWater) {
         waterValue.textContent = shownWater;
         lastWater = shownWater;
+      }
+
+      const living = livingCount(state);
+      if (living !== lastLiving) {
+        livingValue.textContent = living;
+        lastLiving = living;
       }
 
       // Meter bars.
