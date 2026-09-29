@@ -15,7 +15,7 @@ export const MAX_SURVIVAL = 0.9;
 // How fast a single MATURE plant enriches each meter (per second). Small, so a
 // grove builds the environment gradually — progression should be felt over
 // minutes of tending, not seconds. (Feel pass, S10.)
-const METER_GAIN = 0.0006;
+const METER_GAIN = 0.0008;
 
 // Seconds for a survivor to grow from sprout to mature.
 const GROW_TIME = 25;
@@ -61,7 +61,7 @@ export function currentStage(state) {
 
 // 0..1 greening progress used to tint the scene from desert toward scrubland.
 export function greening(state) {
-  return Math.min(1, avgMeter(state) / 0.45);
+  return Math.min(1, avgMeter(state) / 0.4);
 }
 
 // Progress toward the next stage: { nextName, pct } where pct is 0..1 of the

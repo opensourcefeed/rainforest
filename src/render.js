@@ -15,6 +15,44 @@ function mix(a, b, t) {
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 
+// Deterministic scatter of ground vegetation that fades in as the land greens,
+// so the world visibly changes (not just a color tint). Computed once with a
+// tiny seeded RNG so tufts never flicker or move between frames.
+const TUFTS = (() => {
+  let seed = 1337;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const bandTop = DESIGN.h - CONTROL_BAND;
+  const out = [];
+  for (let i = 0; i < 44; i++) {
+    out.push({
+      x: rnd() * DESIGN.w,
+      y: HORIZON + 6 + rnd() * (bandTop - HORIZON - 6),
+      s: 4 + rnd() * 5,
+      threshold: rnd(), // this tuft appears once greening passes here
+    });
+  }
+  return out;
+})();
+
+function drawTufts(ctx, g) {
+  for (const t of TUFTS) {
+    if (g <= t.threshold) continue;
+    // Fade each tuft in over the 0.2 of greening after its threshold.
+    const a = Math.min(1, (g - t.threshold) / 0.2);
+    ctx.globalAlpha = a * 0.9;
+    ctx.strokeStyle = '#3f7a2e';
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (const dx of [-2.5, 0, 2.5]) {
+      ctx.beginPath();
+      ctx.moveTo(t.x + dx, t.y);
+      ctx.quadraticCurveTo(t.x + dx + dx * 0.4, t.y - t.s * 0.7, t.x + dx * 1.6, t.y - t.s);
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
 export function renderScene(ctx, state) {
   const { w, h } = DESIGN;
   const g = greening(state); // 0 desert .. 1 scrubland
@@ -34,10 +72,13 @@ export function renderScene(ctx, state) {
 
   // Ground — bare sand greens toward scrub soil as the environment recovers.
   const sand = ctx.createLinearGradient(0, HORIZON, 0, h);
-  sand.addColorStop(0, mix([217, 181, 121], [150, 168, 96], g));
-  sand.addColorStop(1, mix([184, 137, 77], [120, 130, 70], g));
+  sand.addColorStop(0, mix([217, 181, 121], [122, 156, 74], g));
+  sand.addColorStop(1, mix([184, 137, 77], [92, 116, 56], g));
   ctx.fillStyle = sand;
   ctx.fillRect(0, HORIZON, w, h - HORIZON);
+
+  // Vegetation creeping across the ground as the land heals.
+  drawTufts(ctx, g);
 
   // Lone figure (placeholder)
   ctx.fillStyle = '#4a3a24';

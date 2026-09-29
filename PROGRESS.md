@@ -49,10 +49,27 @@ green ~1.5–2.3 min, with more early deaths than survivors — struggle present
 rewarding. **Caveat:** the sim is a proxy. The real go/no-go is a playtest on a device;
 these constants are a first honest guess, not final balance.
 
+## Phase 0.5 — legibility & UX pass (from playtest feedback)
+Playtest showed the loop worked but progress was invisible ("plants grow then nothing"),
+water was unexplained, and the Collect-water button overlapped the grid. Fixes:
+- [x] **S11 — Fix button/grid overlap.** Reserved a 120-unit bottom control band; grid lays
+      out above it.
+- [x] **S12 — Show the three meters + goal.** Always-on HUD eco panel (soil/shade/humidity
+      bars + "Next: Scrubland" %). Makes the progression visible — the core fix.
+- [x] **S13 — Plant feedback.** Floating survival % on planting; green pop for survivors, red
+      cross for deaths; 🌱 living-plants counter.
+- [x] **S14 — Onboarding + labels.** First-run intro card (once) + persistent "tap soil to
+      plant" hint.
+- [x] **S15 — Title / boot screen.** Front-door title screen every launch; notes idle
+      progress on resume.
+- [x] **S16 — Stronger visible greening + tuning.** Ground vegetation fades in as the land
+      heals; stronger green color shift; meter gain nudged 0.0006→0.0008, greening divisor
+      0.45→0.4.
+
 ## Phase 0 status
-All 10 slices done — a playable stages 1–2 prototype. Next: real-device playtest to answer
-"is the early struggle fun?", then Phase 1 (remaining stages, rain, animals, real art) after
-migrating to Vite for the Capacitor wrap.
+Core loop + legibility pass done — a playable, readable stages 1–2 prototype. Next:
+real-device playtest to answer "is the early struggle fun?", then Phase 1 (remaining stages,
+rain, animals, real art) after migrating to Vite for the Capacitor wrap.
 
 ## Notes / decisions
 - Stack: zero-build vanilla JS/Canvas because the environment has Node but no
