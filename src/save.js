@@ -48,7 +48,9 @@ export function loadGame() {
       state.plots = data.plots;
     }
     const elapsed = Math.max(0, (Date.now() - (data.t || Date.now())) / 1000);
-    applyOffline(state, Math.min(elapsed, OFFLINE_CAP_SEC));
+    const capped = Math.min(elapsed, OFFLINE_CAP_SEC);
+    applyOffline(state, capped);
+    state.offlineSeconds = capped; // for the boot screen "while away" note (not persisted)
   } catch {
     return createState(); // corrupt save — start clean rather than crash
   }
