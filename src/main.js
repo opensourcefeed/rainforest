@@ -113,7 +113,7 @@ function toggleDebug() {
 
 addEventListener('keydown', (e) => { if (e.key === 'd' || e.key === 'D') toggleDebug(); });
 addEventListener('pointerdown', (e) => {
-  if (e.clientX < 80 && e.clientY < 80) { toggleDebug(); return; }
+  if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); return; } // above the eco panel
   const p = eventToDesign(e);
   if (!p) return;
   const plotIndex = plotAt(state, p.x, p.y);

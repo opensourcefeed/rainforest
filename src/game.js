@@ -49,6 +49,19 @@ export function greening(state) {
   return Math.min(1, avgMeter(state) / 0.45);
 }
 
+// Progress toward the next stage: { nextName, pct } where pct is 0..1 of the
+// way from the current stage's threshold to the next. At the last stage,
+// nextName is null and pct is 1.
+export function stageProgress(state) {
+  const a = avgMeter(state);
+  const { index } = currentStage(state);
+  const next = STAGES[index + 1];
+  if (!next) return { nextName: null, pct: 1 };
+  const from = STAGES[index].min;
+  const pct = Math.max(0, Math.min(1, (a - from) / (next.min - from)));
+  return { nextName: next.name, pct };
+}
+
 export function survivalChance(state) {
   return BASE_SURVIVAL + avgMeter(state) * (MAX_SURVIVAL - BASE_SURVIVAL);
 }

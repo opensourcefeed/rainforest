@@ -68,6 +68,49 @@ html, body {
 }
 
 
+/* Ecosystem panel — always-on meters + goal, top-left under the chips. */
+.hud-eco {
+  position: absolute;
+  top: 50px;
+  left: 12px;
+  width: 46%;
+  max-width: 210px;
+  padding: 9px 11px;
+  background: rgba(0, 0, 0, 0.34);
+  border-radius: 12px;
+  color: #fff;
+  pointer-events: none;
+}
+.eco-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.eco-label { flex: 0 0 54px; font-size: 11px; font-weight: 600; opacity: 0.9; }
+.eco-bar {
+  flex: 1;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.eco-bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  transition: width 0.3s ease-out;
+}
+.eco-bar > i[data-m="soil"] { background: #b5813f; }
+.eco-bar > i[data-m="shade"] { background: #4fae8b; }
+.eco-bar > i[data-m="humidity"] { background: #4aa3e0; }
+.eco-goal {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  font-weight: 600;
+}
+.eco-goal-pct { font-variant-numeric: tabular-nums; }
+
 .hud-stat {
   position: absolute;
   top: 12px;

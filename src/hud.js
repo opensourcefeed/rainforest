@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage } from './game.js';
+import { currentStage, stageProgress } from './game.js';
 
 export function createHud({ onCollectWater }) {
   const root = document.getElementById('hud');
@@ -10,6 +10,16 @@ export function createHud({ onCollectWater }) {
   const stage = document.createElement('div');
   stage.className = 'hud-stage';
   stage.id = 'hud-stage';
+
+  // Always-on ecosystem panel: the three meters + progress to the next stage.
+  // This is what makes the player see that living plants are healing the land.
+  const eco = document.createElement('div');
+  eco.className = 'hud-eco';
+  eco.innerHTML = `
+    <div class="eco-row"><span class="eco-label">Soil</span><div class="eco-bar"><i data-m="soil"></i></div></div>
+    <div class="eco-row"><span class="eco-label">Shade</span><div class="eco-bar"><i data-m="shade"></i></div></div>
+    <div class="eco-row"><span class="eco-label">Humidity</span><div class="eco-bar"><i data-m="humidity"></i></div></div>
+    <div class="eco-goal"><span id="eco-goal-label">Progress</span><span class="eco-goal-pct" id="eco-goal-pct">0%</span></div>`;
 
   const water = document.createElement('div');
   water.className = 'hud-stat';
@@ -25,10 +35,17 @@ export function createHud({ onCollectWater }) {
   collect.addEventListener('click', onCollectWater);
   actions.appendChild(collect);
 
-  root.append(stage, water, actions);
+  root.append(stage, eco, water, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const stageEl = root.querySelector('#hud-stage');
+  const bars = {
+    soil: eco.querySelector('[data-m="soil"]'),
+    shade: eco.querySelector('[data-m="shade"]'),
+    humidity: eco.querySelector('[data-m="humidity"]'),
+  };
+  const goalLabel = eco.querySelector('#eco-goal-label');
+  const goalPct = eco.querySelector('#eco-goal-pct');
   let lastWater = null;
   let lastStage = -1;
 
@@ -39,6 +56,17 @@ export function createHud({ onCollectWater }) {
         waterValue.textContent = shownWater;
         lastWater = shownWater;
       }
+
+      // Meter bars.
+      bars.soil.style.width = (state.meters.soil * 100).toFixed(1) + '%';
+      bars.shade.style.width = (state.meters.shade * 100).toFixed(1) + '%';
+      bars.humidity.style.width = (state.meters.humidity * 100).toFixed(1) + '%';
+
+      // Progress to next stage.
+      const prog = stageProgress(state);
+      goalLabel.textContent = prog.nextName ? `Next: ${prog.nextName}` : 'Fully grown';
+      goalPct.textContent = Math.round(prog.pct * 100) + '%';
+
       const s = currentStage(state);
       if (s.index !== lastStage) {
         stageEl.textContent = s.name;
