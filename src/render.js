@@ -1,6 +1,6 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
-import { DESIGN, HORIZON } from './config.js';
+import { DESIGN, HORIZON, CONTROL_BAND } from './config.js';
 import { plotRect } from './state.js';
 import { greening } from './game.js';
 
@@ -57,6 +57,15 @@ export function renderScene(ctx, state) {
     ctx.stroke();
     if (p.plant) drawPlant(ctx, r, p.plant);
   }
+
+  // Bottom control band — a subtle darkening so the HUD buttons have a footing
+  // and read as chrome rather than floating over the grid.
+  const bandTop = h - CONTROL_BAND;
+  const band = ctx.createLinearGradient(0, bandTop, 0, h);
+  band.addColorStop(0, 'rgba(0,0,0,0)');
+  band.addColorStop(1, 'rgba(0,0,0,0.22)');
+  ctx.fillStyle = band;
+  ctx.fillRect(0, bandTop, w, CONTROL_BAND);
 }
 
 // A small sprout centered in the plot, drawn per lifecycle state.
