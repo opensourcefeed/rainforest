@@ -3,9 +3,10 @@
 import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt } from './state.js';
 import { computeLayout, L } from './layout.js';
-import { plantSeed, unlockPlot, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
+import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
+import { createShop } from './shop.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
@@ -26,9 +27,11 @@ const state = loadGame();
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
+const shop = createShop(state);
 const hud = createHud({
-  onCollectWater() { state.water += WATER_PER_COLLECT; },
+  onCollectWater() { state.water += collectAmount(state); },
   onSelectType(id) { state.selectedType = id; },
+  onOpenShop() { shop.open(); },
   // Selector height changes when a new tier unlocks; re-measure the reserve.
   onLayoutChange() { scheduleLayout(); },
 });
@@ -106,6 +109,7 @@ function frame(now) {
   renderBackdrop(bgCtx, state, now);
   renderScene(ctx, state, now);
   hud.update(state);
+  shop.refresh(); // keep affordability current while open
   // A new milestone pauses the game and raises the celebration.
   if (state.milestone && !paused) {
     paused = true;

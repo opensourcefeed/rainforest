@@ -325,6 +325,68 @@ html, body {
   touch-action: manipulation;
 }
 .hud-btn:active { transform: translateY(1px); filter: brightness(0.95); }
+.hud-btn-sec {
+  min-width: 52px;
+  padding: 0 14px;
+  font-size: 22px;
+  background: #3a4a2e;
+}
+
+/* --- Upgrades shop ------------------------------------------------------ */
+.shop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: end center;
+  padding: 0;
+  background: rgba(10, 16, 8, 0.55);
+}
+.shop[hidden] { display: none; }
+.shop-card {
+  width: 100%;
+  max-width: 440px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px calc(var(--safe-b) + 16px);
+  background: #22301d;
+  border-radius: 20px 20px 0 0;
+  color: #eef3ea;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
+  animation: shopUp 0.25s ease;
+}
+@keyframes shopUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.shop-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.shop-head h2 { font-size: 20px; font-weight: 800; flex: 1; }
+.shop-water { font-weight: 700; font-variant-numeric: tabular-nums; }
+.shop-close { background: rgba(255, 255, 255, 0.12); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; }
+.shop-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.shop-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(255, 255, 255, 0.06); border-radius: 12px; }
+.shop-ic { font-size: 24px; }
+.shop-info { flex: 1; min-width: 0; }
+.shop-name { font-size: 15px; font-weight: 700; }
+.shop-desc { font-size: 12px; opacity: 0.8; }
+.shop-pips { display: flex; gap: 3px; margin-top: 5px; }
+.shop-pips i { width: 12px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.18); }
+.shop-pips i.on { background: #6fe06a; }
+.shop-buy {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: #4faf47;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.shop-buy.off { background: #46503c; color: rgba(255, 255, 255, 0.5); }
+.shop-buy:disabled { cursor: default; }
+.shop-buy:not(:disabled):active { filter: brightness(0.95); }
 
 /* --- Loading screen ----------------------------------------------------- */
 .loader {

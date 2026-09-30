@@ -20,6 +20,7 @@ export function createState() {
     // chance reads from them, so the desert bootstraps itself.
     meters: { soil: 0, shade: 0, humidity: 0 },
     selectedType: 'seed', // which plant type the next tap plants
+    upgrades: {}, // permanent upgrade levels bought with water (see game.UPGRADES)
     stageReached: 0, // highest stage index rewarded (so bonuses fire once)
     milestone: null, // transient {name, bonus, age} for the reward banner
     // Rain: unlocks once humidity is high enough, then cycles. `intensity` eases

@@ -19,6 +19,7 @@ export function saveGame(state) {
       water: state.water,
       meters: state.meters,
       selectedType: state.selectedType,
+      upgrades: state.upgrades,
       stageReached: state.stageReached,
       plots: state.plots.map((p) => ({
         col: p.col, row: p.row, unlocked: p.unlocked, planted: p.planted, plant: p.plant,
@@ -47,6 +48,7 @@ export function loadGame() {
     if (typeof data.water === 'number') state.water = data.water;
     if (data.meters) Object.assign(state.meters, data.meters);
     if (typeof data.selectedType === 'string') state.selectedType = data.selectedType;
+    if (data.upgrades && typeof data.upgrades === 'object') state.upgrades = data.upgrades;
     if (Array.isArray(data.plots) && data.plots.length === state.plots.length) {
       state.plots = data.plots;
       // Migrate pre-expansion saves: no `unlocked` field means every plot was

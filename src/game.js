@@ -26,6 +26,45 @@ export function selectedType(state) {
   return TYPE_BY_ID[state.selectedType] || PLANT_TYPES[0];
 }
 
+// --- Upgrades: permanent boosts bought with water (the main water sink) -----
+export const UPGRADES = [
+  { id: 'survival', name: 'Fertile Soil', icon: '🌱', desc: 'Seeds survive more often', base: 25, growth: 1.8, max: 8 },
+  { id: 'growth', name: 'Warm Sun', icon: '☀️', desc: 'Plants grow faster', base: 30, growth: 1.85, max: 8 },
+  { id: 'yield', name: 'Deep Roots', icon: '💧', desc: 'Plants yield more water', base: 40, growth: 1.9, max: 10 },
+  { id: 'cost', name: 'Seed Bank', icon: '🌰', desc: 'Seeds cost less', base: 35, growth: 2.0, max: 6 },
+  { id: 'rain', name: 'Rain Dance', icon: '🌧️', desc: 'Rain comes more often', base: 60, growth: 2.1, max: 6 },
+  { id: 'collect', name: 'Bigger Jugs', icon: '🪣', desc: 'Collect more water', base: 20, growth: 1.7, max: 8 },
+];
+
+export function upgradeLevel(state, id) {
+  return (state.upgrades && state.upgrades[id]) || 0;
+}
+export function upgradeCost(state, id) {
+  const u = UPGRADES.find((x) => x.id === id);
+  if (!u) return Infinity;
+  const lvl = upgradeLevel(state, id);
+  if (lvl >= u.max) return Infinity;
+  return Math.ceil(u.base * Math.pow(u.growth, lvl));
+}
+export function buyUpgrade(state, id) {
+  const u = UPGRADES.find((x) => x.id === id);
+  if (!u) return false;
+  const lvl = upgradeLevel(state, id);
+  if (lvl >= u.max || state.water < upgradeCost(state, id)) return false;
+  state.water -= upgradeCost(state, id);
+  state.upgrades[id] = lvl + 1;
+  return true;
+}
+
+// Effective values after upgrades.
+export function collectAmount(state) {
+  return WATER_PER_COLLECT + upgradeLevel(state, 'collect') * 2;
+}
+export function plantCost(state, type) {
+  const d = upgradeLevel(state, 'cost') * 0.05;
+  return Math.max(1, Math.round(type.cost * (1 - d)));
+}
+
 // Land expansion: unlocking a plot costs water, rising with how many you own —
 // the main early water sink and sense of growth.
 const UNLOCK_BASE = 4;
@@ -108,7 +147,10 @@ function updateRain(state, dt) {
     rain.timer -= dt;
     if (rain.timer <= 0) {
       rain.active = !rain.active;
-      rain.timer = rain.active ? RAIN_DURATION : RAIN_INTERVAL;
+      const rl = upgradeLevel(state, 'rain');
+      rain.timer = rain.active
+        ? RAIN_DURATION * (1 + rl * 0.1)
+        : RAIN_INTERVAL * Math.max(0.4, 1 - rl * 0.1);
     }
   }
 
@@ -124,13 +166,14 @@ function updateRain(state, dt) {
 
 // Current total water income per second (trickle + grove yield), for the HUD.
 export function waterRate(state) {
-  let rate = WATER_REGEN_PER_SEC;
+  let rate = WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03;
   const humidity = state.meters.humidity;
+  const yieldMulUp = 1 + upgradeLevel(state, 'yield') * 0.15;
   for (const plot of state.plots) {
     const p = plot.plant;
     if (p && p.status === 'alive') {
       const type = TYPE_BY_ID[p.typeId] || PLANT_TYPES[0];
-      rate += WATER_YIELD * p.growth * humidity * type.yieldMul;
+      rate += WATER_YIELD * p.growth * humidity * type.yieldMul * yieldMulUp;
     }
   }
   if (state.rain) rate += RAIN_WATER * (state.rain.intensity || 0);
@@ -192,7 +235,8 @@ export function stageProgress(state) {
 }
 
 export function survivalChance(state) {
-  return BASE_SURVIVAL + avgMeter(state) * (MAX_SURVIVAL - BASE_SURVIVAL);
+  const bonus = upgradeLevel(state, 'survival') * 0.04;
+  return Math.min(0.97, BASE_SURVIVAL + avgMeter(state) * (MAX_SURVIVAL - BASE_SURVIVAL) + bonus);
 }
 
 // Attempt to plant a seed in plot `index`. Returns true if it happened.
@@ -200,12 +244,13 @@ export function plantSeed(state, index) {
   const plot = state.plots[index];
   if (!plot || !plot.unlocked || plot.planted) return false;
   const type = selectedType(state);
-  if (state.water < type.cost) {
-    pushFx(state, plot.col, plot.row, 'need', `${type.cost}💧`);
+  const cost = plantCost(state, type);
+  if (state.water < cost) {
+    pushFx(state, plot.col, plot.row, 'need', `${cost}💧`);
     return false;
   }
 
-  state.water -= type.cost;
+  state.water -= cost;
   plot.planted = true;
   plot.plant = { status: 'settling', age: 0, growth: 0, typeId: type.id };
   // Show the odds the player is up against, so failure reads as informative.
@@ -216,7 +261,9 @@ export function plantSeed(state, index) {
 // Advance every plant and let the living ones enrich the environment.
 export function updateWorld(state, dt) {
   const m = state.meters;
-  state.water += WATER_REGEN_PER_SEC * dt; // slow trickle — never hard-stuck
+  const growthMul = 1 + upgradeLevel(state, 'growth') * 0.12;
+  const yieldMulUp = 1 + upgradeLevel(state, 'yield') * 0.15;
+  state.water += (WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03) * dt; // trickle
 
   // Age and expire transient effects.
   for (let i = state.fx.length - 1; i >= 0; i--) {
@@ -249,17 +296,15 @@ export function updateWorld(state, dt) {
       plot.plant = null;
     } else if (p.status === 'alive') {
       const type = TYPE_BY_ID[p.typeId] || PLANT_TYPES[0];
-      p.growth = Math.min(1, p.growth + dt / type.growTime);
-      // Young plants contribute a little, mature plants the full amount; higher
-      // tiers heal the land faster.
+      p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul);
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
       const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul;
       m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 2);
       m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 2);
       m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 2);
-      // Grove water yield — grows with the plant, humidity, and tier.
-      state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul;
+      // Grove water yield — grows with the plant, humidity, tier, and upgrades.
+      state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul * yieldMulUp;
     }
   }
 

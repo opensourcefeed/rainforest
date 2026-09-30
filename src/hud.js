@@ -2,9 +2,9 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, availableTypes } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost } from './game.js';
 
-export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
+export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -58,7 +58,15 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
   collect.type = 'button';
   collect.textContent = 'Collect water';
   collect.addEventListener('click', onCollectWater);
-  actions.appendChild(collect);
+
+  const shopBtn = document.createElement('button');
+  shopBtn.className = 'hud-btn hud-btn-sec';
+  shopBtn.type = 'button';
+  shopBtn.setAttribute('aria-label', 'Upgrades');
+  shopBtn.textContent = '🛠️';
+  shopBtn.addEventListener('click', onOpenShop);
+
+  actions.append(collect, shopBtn);
 
   root.append(stage, rain, eco, water, living, types, hint, actions);
 
@@ -123,8 +131,12 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
       if (avail.length !== lastTypeCount) rebuildTypes(avail);
       for (const btn of types.children) {
         const t = avail.find((x) => x.id === btn.dataset.type);
+        if (!t) continue;
+        const c = plantCost(state, t); // reflects the Seed Bank upgrade
+        const costEl = btn.querySelector('.t-cost');
+        if (costEl) costEl.textContent = `${c}💧`;
         btn.classList.toggle('sel', btn.dataset.type === state.selectedType);
-        btn.classList.toggle('poor', !!t && state.water < t.cost);
+        btn.classList.toggle('poor', state.water < c);
       }
 
       // Progress to next stage.
