@@ -131,7 +131,7 @@ function drawFigure(ctx, x, feetY, s = 1) {
 // Full-window backdrop: the current stage's sky/ground gradients, slightly
 // darkened so they recede behind the play field, with the horizon aligned to the
 // play field's horizon (horizonY is in the backdrop's CSS-pixel space).
-export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h) {
+export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h, now = 0) {
   const col = sceneColors(avgMeter(state));
   const cs = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
   const hy = Math.max(0, Math.min(h, horizonY));
@@ -154,6 +154,13 @@ export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h) {
   gnd.addColorStop(1, cs(col.grBot));
   ctx.fillStyle = gnd;
   ctx.fillRect(0, hy, w, h - hy);
+
+  // Rain across the extended scene too, so the storm is continuous.
+  if (state.rain && state.rain.active) {
+    ctx.fillStyle = 'rgba(40, 55, 70, 0.14)';
+    ctx.fillRect(0, 0, w, h);
+    drawRain(ctx, w, h, now / 1000);
+  }
 }
 
 export function renderScene(ctx, state, now = 0) {
@@ -242,6 +249,14 @@ export function renderScene(ctx, state, now = 0) {
   // Transient feedback effects, on top of the plants.
   drawFx(ctx, state);
 
+  // Rain event — clouds, streaks and a mood darken over the whole scene.
+  if (state.rain && state.rain.active) {
+    ctx.fillStyle = 'rgba(40, 55, 70, 0.14)';
+    ctx.fillRect(0, 0, w, h);
+    drawClouds(ctx, w, time);
+    drawRain(ctx, w, h, time);
+  }
+
   // Bottom control band — a subtle darkening so the HUD buttons have a footing
   // and read as chrome rather than floating over the grid. Height matches the
   // dynamically-measured control reserve.
@@ -252,6 +267,31 @@ export function renderScene(ctx, state, now = 0) {
   band.addColorStop(1, 'rgba(0,0,0,0.22)');
   ctx.fillStyle = band;
   ctx.fillRect(0, bandTop, w, bandH);
+}
+
+// Animated rain streaks falling across a region.
+function drawRain(ctx, w, h, time, topY = 0) {
+  ctx.strokeStyle = 'rgba(185, 208, 228, 0.5)';
+  ctx.lineWidth = 1.3;
+  const N = 70, speed = 720, span = h - topY + 30;
+  for (let i = 0; i < N; i++) {
+    const x = (i * 89.3) % w;
+    const y = topY + ((i * 57 + time * speed) % span);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 4, y + 11);
+    ctx.stroke();
+  }
+}
+
+// Soft grey rain clouds drifting across the upper sky.
+function drawClouds(ctx, w, time) {
+  ctx.fillStyle = 'rgba(96, 106, 116, 0.55)';
+  for (const [fx, cw, cy] of [[0.2, 58, 58], [0.55, 84, 44], [0.82, 48, 74]]) {
+    const x = ((fx * w + time * 11) % (w + 140)) - 70;
+    ctx.beginPath(); ctx.ellipse(x, cy, cw, cw * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + cw * 0.6, cy + 6, cw * 0.7, cw * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+  }
 }
 
 // Wildlife that returns as milestones are passed — a living, animated reward.

@@ -11,6 +11,12 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
   stage.className = 'hud-stage';
   stage.id = 'hud-stage';
 
+  // Rain badge — shown only while a shower is active.
+  const rain = document.createElement('div');
+  rain.className = 'hud-rain';
+  rain.hidden = true;
+  rain.textContent = '🌧 Rain';
+
   // Always-on ecosystem panel: the three meters + progress to the next stage.
   // This is what makes the player see that living plants are healing the land.
   const eco = document.createElement('div');
@@ -54,7 +60,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
   collect.addEventListener('click', onCollectWater);
   actions.appendChild(collect);
 
-  root.append(stage, eco, water, living, types, hint, actions);
+  root.append(stage, rain, eco, water, living, types, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');
@@ -103,6 +109,8 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
         livingValue.textContent = living;
         lastLiving = living;
       }
+
+      rain.hidden = !(state.rain && state.rain.active);
 
       // Meter bars.
       bars.soil.style.width = (state.meters.soil * 100).toFixed(1) + '%';

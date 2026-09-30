@@ -32,6 +32,9 @@ export function createState() {
     selectedType: 'seed', // which plant type the next tap plants
     stageReached: 0, // highest stage index rewarded (so bonuses fire once)
     milestone: null, // transient {name, bonus, age} for the reward banner
+    // Rain: unlocks once humidity is high enough, then cycles on/off. Transient
+    // (not persisted) — derived from humidity on load.
+    rain: { unlocked: false, active: false, timer: 0 },
     // Transient visual effects (floating text, survive/die pops). Aged and
     // cleared in updateWorld; drawn by render. Not persisted.
     fx: [],

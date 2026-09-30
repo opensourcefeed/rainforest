@@ -133,7 +133,7 @@ function frame(now) {
       acc -= STEP;
     }
   }
-  renderBackdrop(bgCtx, state, view.winW, view.winH, view.horizonY, view.fieldBottom);
+  renderBackdrop(bgCtx, state, view.winW, view.winH, view.horizonY, view.fieldBottom, now);
   renderScene(ctx, state, now);
   hud.update(state);
   // A new milestone pauses the game and raises the celebration.

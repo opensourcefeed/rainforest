@@ -87,6 +87,30 @@ export const START_WATER = 8;
 // expand/plant loop sustains itself. Scaled by growth and humidity.
 export const WATER_YIELD = 0.16;
 
+// Rain: once humidity crosses the threshold, rain events begin and water becomes
+// truly renewable (the tycoon turning point). Rain cycles on/off and pours water
+// while active.
+export const RAIN_HUMIDITY = 0.5;
+const RAIN_INTERVAL = 34;   // seconds between showers
+const RAIN_DURATION = 12;   // seconds each shower lasts
+export const RAIN_WATER = 4; // water per second while raining
+
+// Advance the rain cycle and pour water while it's active.
+function updateRain(state, dt) {
+  const rain = state.rain;
+  if (state.meters.humidity < RAIN_HUMIDITY) return;
+  if (!rain.unlocked) { rain.unlocked = true; rain.active = false; rain.timer = 6; }
+  rain.timer -= dt;
+  if (rain.timer <= 0) {
+    rain.active = !rain.active;
+    rain.timer = rain.active ? RAIN_DURATION : RAIN_INTERVAL;
+  }
+  if (rain.active) {
+    state.water += RAIN_WATER * dt;
+    state.meters.humidity = Math.min(1, state.meters.humidity + 0.004 * dt);
+  }
+}
+
 // Current total water income per second (trickle + grove yield), for the HUD.
 export function waterRate(state) {
   let rate = WATER_REGEN_PER_SEC;
@@ -98,6 +122,7 @@ export function waterRate(state) {
       rate += WATER_YIELD * p.growth * humidity * type.yieldMul;
     }
   }
+  if (state.rain && state.rain.active) rate += RAIN_WATER;
   return rate;
 }
 
@@ -226,4 +251,6 @@ export function updateWorld(state, dt) {
       state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul;
     }
   }
+
+  updateRain(state, dt);
 }

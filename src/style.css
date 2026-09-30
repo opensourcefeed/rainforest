@@ -71,6 +71,21 @@ html, body {
   white-space: nowrap;
   pointer-events: none;
 }
+.hud-rain {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: rgba(40, 60, 80, 0.62);
+  border-radius: 999px;
+  color: #dbeaf5;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .hud-stage.flash { animation: stageFlash 1.4s ease-out; }
 @keyframes stageFlash {
   0% { transform: translateX(-50%) scale(1.25); background: rgba(79, 175, 71, 0.85); }

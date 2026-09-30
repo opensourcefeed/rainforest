@@ -93,7 +93,14 @@ Turning the beat-in-2-minutes prototype into a real economy loop.
       confetti modal (stage art, flavor, +bonus, Continue). Fires once per stage, one at a
       time; replaces the old corner banner.
 
-Next in Phase 1: rain events, ambient sound, real art, then migrate to Vite for Capacitor.
+- [x] **S27 — Full-window backdrop.** Extended scenery behind the play field (horizon-aligned,
+      seamless), vignette; wide screens no longer letterboxed.
+- [x] **S28 — Distinct plant shapes.** Sprout / cactus / shrub / tree / canopy silhouettes.
+- [x] **S29 — Rain events.** Once humidity ≥ 0.5, rain cycles on/off (12s on / 34s off),
+      pouring ~4💧/s — the renewable-water turning point. Animated rain + clouds in scene and
+      backdrop; HUD rain badge.
+
+Next in Phase 1: ambient sound, real art, then migrate to Vite for Capacitor.
 
 ## Phase 0 status
 Core loop + legibility pass done — a playable, readable stages 1–2 prototype. Next:
