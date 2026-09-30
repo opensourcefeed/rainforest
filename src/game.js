@@ -91,23 +91,34 @@ export const WATER_YIELD = 0.16;
 // truly renewable (the tycoon turning point). Rain cycles on/off and pours water
 // while active.
 export const RAIN_HUMIDITY = 0.5;
-const RAIN_INTERVAL = 34;   // seconds between showers
-const RAIN_DURATION = 12;   // seconds each shower lasts
-export const RAIN_WATER = 4; // water per second while raining
+const RAIN_INTERVAL = 42;   // dry gap between showers (s)
+const RAIN_DURATION = 20;   // wet window (s)
+const RAIN_TAU = 3.4;       // easing time constant — gradual build / wean-off
+export const RAIN_WATER = 4.5; // water per second at full intensity
 
-// Advance the rain cycle and pour water while it's active.
+// Advance the rain cycle. `intensity` eases toward 1 during a shower and 0
+// otherwise, so rain builds up and tapers off gradually (and drives the light,
+// clouds, and water yield smoothly).
 function updateRain(state, dt) {
   const rain = state.rain;
-  if (state.meters.humidity < RAIN_HUMIDITY) return;
-  if (!rain.unlocked) { rain.unlocked = true; rain.active = false; rain.timer = 6; }
-  rain.timer -= dt;
-  if (rain.timer <= 0) {
-    rain.active = !rain.active;
-    rain.timer = rain.active ? RAIN_DURATION : RAIN_INTERVAL;
+  if (state.meters.humidity < RAIN_HUMIDITY) {
+    rain.active = false; // fade out if humidity drops below the threshold
+  } else {
+    if (!rain.unlocked) { rain.unlocked = true; rain.active = false; rain.timer = 8; }
+    rain.timer -= dt;
+    if (rain.timer <= 0) {
+      rain.active = !rain.active;
+      rain.timer = rain.active ? RAIN_DURATION : RAIN_INTERVAL;
+    }
   }
-  if (rain.active) {
-    state.water += RAIN_WATER * dt;
-    state.meters.humidity = Math.min(1, state.meters.humidity + 0.004 * dt);
+
+  const target = rain.active ? 1 : 0;
+  rain.intensity += (target - rain.intensity) * (1 - Math.exp(-dt / RAIN_TAU));
+  if (rain.intensity < 0.001) rain.intensity = 0;
+
+  if (rain.intensity > 0.02) {
+    state.water += RAIN_WATER * dt * rain.intensity;
+    state.meters.humidity = Math.min(1, state.meters.humidity + 0.004 * dt * rain.intensity);
   }
 }
 
@@ -122,7 +133,7 @@ export function waterRate(state) {
       rate += WATER_YIELD * p.growth * humidity * type.yieldMul;
     }
   }
-  if (state.rain && state.rain.active) rate += RAIN_WATER;
+  if (state.rain) rate += RAIN_WATER * (state.rain.intensity || 0);
   return rate;
 }
 

@@ -197,16 +197,18 @@ export function renderBackdrop(ctx, state, now = 0) {
   ctx.fillStyle = gnd;
   ctx.fillRect(0, hy, w, h - hy);
 
-  const raining = !!(state.rain && state.rain.active);
-  drawSun(ctx, w * 0.74, hy * 0.42, avg, time, raining ? 0.28 : 1);
+  const rainI = (state.rain && state.rain.intensity) || 0;
+  drawSun(ctx, w * 0.74, hy * 0.42, avg, time, 1 - 0.72 * rainI);
   drawTufts(ctx, w, hy, h, avg);
   drawCritters(ctx, w, hy, h, avg, time);
 
-  if (raining) {
-    ctx.fillStyle = 'rgba(38, 52, 66, 0.22)'; // overcast mood
+  // Clouds roll in and the light dims as the shower builds; both ease with
+  // intensity so nothing pops on/off.
+  if (rainI > 0.01) {
+    drawClouds(ctx, w, hy, time, rainI);
+    ctx.fillStyle = `rgba(38, 52, 66, ${0.24 * rainI})`;
     ctx.fillRect(0, 0, w, h);
-    drawClouds(ctx, w, time);
-    drawRain(ctx, w, h, time);
+    drawRain(ctx, w, h, time, 0, rainI);
   }
 }
 
@@ -264,9 +266,8 @@ export function renderScene(ctx, state, now = 0) {
   drawFx(ctx, state);
 
   // Rain streaks over the platform (the backdrop rains on the wider scene).
-  if (state.rain && state.rain.active) {
-    drawRain(ctx, w, h, time);
-  }
+  const rainI = (state.rain && state.rain.intensity) || 0;
+  if (rainI > 0.01) drawRain(ctx, w, h, time, 0, rainI);
 
   // Bottom control band — a subtle darkening so the HUD buttons have a footing.
   const bandH = L.reserve;
@@ -278,33 +279,57 @@ export function renderScene(ctx, state, now = 0) {
   ctx.fillRect(0, bandTop, w, bandH);
 }
 
-// Animated rain streaks falling across a region.
-function drawRain(ctx, w, h, time, topY = 0) {
-  ctx.strokeStyle = 'rgba(190, 212, 232, 0.55)';
+// Animated rain streaks. Density + opacity scale with intensity (0..1) so the
+// rain builds from a light drizzle to a downpour and back.
+function drawRain(ctx, w, h, time, topY = 0, intensity = 1) {
+  const full = Math.max(40, Math.min(560, Math.round((w * (h - topY)) / 4600)));
+  const N = Math.round(full * intensity);
+  if (N <= 0) return;
+  ctx.strokeStyle = `rgba(190, 212, 232, ${0.5 * Math.min(1, 0.4 + intensity)})`;
   ctx.lineWidth = 1.4;
-  // Density scales with area so it reads as rain on any screen size.
-  const N = Math.max(40, Math.min(500, Math.round((w * (h - topY)) / 5200)));
-  const speed = 780, span = h - topY + 30;
+  const speed = 700 + 260 * intensity, span = h - topY + 30;
+  const len = 9 + 6 * intensity;
   for (let i = 0; i < N; i++) {
     const x = (i * 89.3) % w;
     const y = topY + ((i * 57 + time * speed) % span);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x - 4, y + 12);
+    ctx.lineTo(x - len * 0.35, y + len);
     ctx.stroke();
   }
 }
 
-// Soft grey rain clouds drifting across the upper sky, filling the width.
-function drawClouds(ctx, w, time) {
-  ctx.fillStyle = 'rgba(92, 102, 112, 0.6)';
-  const n = Math.max(3, Math.round(w / 240));
-  for (let k = 0; k < n; k++) {
-    const cw = 46 + (k % 3) * 22;
-    const cy = 38 + (k % 2) * 34;
-    const x = (((k + 0.3) / n * w + time * 11) % (w + 160)) - 80;
-    ctx.beginPath(); ctx.ellipse(x, cy, cw, cw * 0.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(x + cw * 0.6, cy + 6, cw * 0.7, cw * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+// A puffy cloud: several overlapping lobes.
+function puffCloud(ctx, cx, cy, s) {
+  for (const [dx, dy, r] of [
+    [-1.15, 0.15, 0.62], [-0.5, -0.35, 0.8], [0.2, -0.45, 0.92],
+    [0.9, -0.2, 0.72], [1.35, 0.15, 0.55], [0.35, 0.2, 0.85], [-0.2, 0.22, 0.9],
+  ]) {
+    ctx.beginPath();
+    ctx.ellipse(cx + dx * s, cy + dy * s, r * s, r * s * 0.78, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Persistent clouds that drift across and off the edges (never pop in place).
+const CLOUDS = (() => {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const out = [];
+  for (let i = 0; i < 9; i++) {
+    out.push({ phase: rnd(), fy: 0.12 + rnd() * 0.32, s: 26 + rnd() * 24, sp: 5 + rnd() * 8 });
+  }
+  return out;
+})();
+
+// Clouds fade in with intensity and slide continuously across the sky.
+function drawClouds(ctx, w, horizonY, time, intensity) {
+  ctx.fillStyle = `rgba(96, 106, 118, ${0.66 * intensity})`;
+  for (const c of CLOUDS) {
+    const s = c.s * L.unit;
+    const span = w + s * 5;
+    const x = ((c.phase * span + time * c.sp) % span) - s * 2.5; // -2.5s .. w+2.5s
+    puffCloud(ctx, x, horizonY * c.fy, s);
   }
 }
 

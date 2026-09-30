@@ -110,7 +110,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
         lastLiving = living;
       }
 
-      rain.hidden = !(state.rain && state.rain.active);
+      rain.hidden = !(state.rain && state.rain.intensity > 0.15);
 
       // Meter bars.
       bars.soil.style.width = (state.meters.soil * 100).toFixed(1) + '%';
