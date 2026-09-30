@@ -68,6 +68,30 @@ html, body {
 }
 
 
+/* Milestone reward banner — centered, animates in on a new stage. */
+.hud-milestone {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  background: rgba(47, 122, 42, 0.92);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.hud-milestone.show { animation: milestonePop 3.6s ease-out forwards; }
+@keyframes milestonePop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.9); }
+  8% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+}
+
 /* Ecosystem panel — always-on meters + goal, top-left under the chips. */
 .hud-eco {
   position: absolute;

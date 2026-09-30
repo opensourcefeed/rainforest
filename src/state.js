@@ -18,6 +18,8 @@ export function createState() {
     // chance reads from them, so the desert bootstraps itself.
     meters: { soil: 0, shade: 0, humidity: 0 },
     selectedType: 'seed', // which plant type the next tap plants
+    stageReached: 0, // highest stage index rewarded (so bonuses fire once)
+    milestone: null, // transient {name, bonus, age} for the reward banner
     // Transient visual effects (floating text, survive/die pops). Aged and
     // cleared in updateWorld; drawn by render. Not persisted.
     fx: [],

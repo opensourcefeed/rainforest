@@ -106,6 +106,9 @@ export function renderScene(ctx, state) {
   // Vegetation creeping across the ground as the land heals.
   drawTufts(ctx, avg);
 
+  // Wildlife returns as the land recovers (fades in past each threshold).
+  drawCritters(ctx, avg);
+
   // Lone figure (placeholder)
   ctx.fillStyle = '#4a3a24';
   ctx.fillRect(w * 0.5 - 4, HORIZON - 26, 8, 26);
@@ -160,6 +163,26 @@ export function renderScene(ctx, state) {
   band.addColorStop(1, 'rgba(0,0,0,0.22)');
   ctx.fillStyle = band;
   ctx.fillRect(0, bandTop, w, CONTROL_BAND);
+}
+
+// Wildlife that returns as milestones are passed — a living reward.
+const CRITTERS = [
+  { emoji: '🦋', at: 0.42, x: 0.24, y: 0.5 },
+  { emoji: '🐦', at: 0.5, x: 0.68, y: 0.42 },
+  { emoji: '🦋', at: 0.6, x: 0.8, y: 0.55 },
+  { emoji: '🦌', at: 0.72, x: 0.34, y: 0.585 },
+  { emoji: '🐒', at: 0.88, x: 0.6, y: 0.5 },
+];
+function drawCritters(ctx, avg) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '18px system-ui, sans-serif';
+  for (const c of CRITTERS) {
+    if (avg <= c.at) continue;
+    ctx.globalAlpha = Math.min(1, (avg - c.at) / 0.08);
+    ctx.fillText(c.emoji, DESIGN.w * c.x, DESIGN.h * c.y);
+  }
+  ctx.globalAlpha = 1;
 }
 
 // Draw transient feedback effects (survival %, survive/die pops).

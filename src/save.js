@@ -2,7 +2,7 @@
 // Phase 2). Every access is wrapped in try/catch: private mode, cleared data,
 // or preview contexts can throw or return null, and the game must still run.
 import { createState } from './state.js';
-import { updateWorld } from './game.js';
+import { updateWorld, currentStage } from './game.js';
 
 const SAVE_KEY = 'rainforest.save.v1';
 
@@ -19,6 +19,7 @@ export function saveGame(state) {
       water: state.water,
       meters: state.meters,
       selectedType: state.selectedType,
+      stageReached: state.stageReached,
       plots: state.plots.map((p) => ({
         col: p.col, row: p.row, unlocked: p.unlocked, planted: p.planted, plant: p.plant,
       })),
@@ -54,10 +55,17 @@ export function loadGame() {
         state.plots.forEach((p) => { p.unlocked = true; });
       }
     }
+    // Don't re-grant milestone bonuses for stages already reached. Trust the
+    // saved value if present; otherwise seed from the restored environment.
+    state.stageReached = Number.isInteger(data.stageReached)
+      ? data.stageReached
+      : currentStage(state).index;
+
     const elapsed = Math.max(0, (Date.now() - (data.t || Date.now())) / 1000);
     const capped = Math.min(elapsed, OFFLINE_CAP_SEC);
     applyOffline(state, capped);
     state.offlineSeconds = capped; // for the boot screen "while away" note (not persisted)
+    state.milestone = null; // don't pop a banner from offline catch-up
   } catch {
     return createState(); // corrupt save — start clean rather than crash
   }

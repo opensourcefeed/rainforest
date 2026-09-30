@@ -188,6 +188,19 @@ export function updateWorld(state, dt) {
     if (state.fx[i].age >= state.fx[i].ttl) state.fx.splice(i, 1);
   }
 
+  // Milestone: reward the player the first time they reach each new stage.
+  const stageIdx = currentStage(state).index;
+  if (stageIdx > state.stageReached) {
+    const bonus = Math.round(15 * Math.pow(3, stageIdx));
+    state.water += bonus;
+    state.milestone = { name: STAGES[stageIdx].name, bonus, age: 0 };
+    state.stageReached = stageIdx;
+  }
+  if (state.milestone) {
+    state.milestone.age += dt;
+    if (state.milestone.age > 3.6) state.milestone = null;
+  }
+
   for (const plot of state.plots) {
     const p = plot.plant;
     if (!p) continue;

@@ -11,6 +11,11 @@ export function createHud({ onCollectWater, onSelectType }) {
   stage.className = 'hud-stage';
   stage.id = 'hud-stage';
 
+  // Milestone reward banner (shown briefly on reaching a new stage).
+  const milestone = document.createElement('div');
+  milestone.className = 'hud-milestone';
+  milestone.hidden = true;
+
   // Always-on ecosystem panel: the three meters + progress to the next stage.
   // This is what makes the player see that living plants are healing the land.
   const eco = document.createElement('div');
@@ -54,7 +59,7 @@ export function createHud({ onCollectWater, onSelectType }) {
   collect.addEventListener('click', onCollectWater);
   actions.appendChild(collect);
 
-  root.append(stage, eco, water, living, types, hint, actions);
+  root.append(stage, milestone, eco, water, living, types, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');
@@ -72,6 +77,7 @@ export function createHud({ onCollectWater, onSelectType }) {
   let lastLiving = null;
   let lastStage = -1;
   let lastTypeCount = 0;
+  let shownMilestone = null;
 
   function rebuildTypes(avail) {
     types.innerHTML = avail.map((t) => `
@@ -122,6 +128,19 @@ export function createHud({ onCollectWater, onSelectType }) {
       const prog = stageProgress(state);
       goalLabel.textContent = prog.nextName ? `Next: ${prog.nextName}` : 'Fully grown';
       goalPct.textContent = Math.round(prog.pct * 100) + '%';
+
+      // Milestone banner.
+      if (state.milestone && state.milestone.name !== shownMilestone) {
+        milestone.textContent = `🎉 ${state.milestone.name} reached!  +${state.milestone.bonus} 💧`;
+        milestone.hidden = false;
+        milestone.classList.remove('show');
+        void milestone.offsetWidth;
+        milestone.classList.add('show');
+        shownMilestone = state.milestone.name;
+      } else if (!state.milestone && shownMilestone) {
+        milestone.hidden = true;
+        shownMilestone = null;
+      }
 
       const s = currentStage(state);
       if (s.index !== lastStage) {
