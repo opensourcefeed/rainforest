@@ -106,8 +106,13 @@ Turning the beat-in-2-minutes prototype into a real economy loop.
       locked prices re-anchored. Removed canvas box-shadow.
 - [x] **S31 — Raised soil blocks.** Tiles render as 3D blocks (side faces + top) that green
       with progress.
-- [ ] S32 — Scene recomposition for iso (man/sun/tufts/critters placement), if needed after
-      playtest.
+- [x] S32 — Scene recomposition; S33 accessible cells; S34 scene polish; S35 full-screen
+      scenery.
+- [x] **S36 — Full adaptive layout.** Dropped the fixed portrait design-box + letterbox.
+      New layout.js computes screen-space geometry (horizon by aspect, iso grid sized/centered
+      to available space, UI unit scale); both canvases fill the window; render + hit-testing
+      work in screen px. Tile count fixed (20) so balance is unchanged. Verified 20/20 hit-test
+      on phone/tablet/desktop.
 
 Decision: staying vanilla Canvas 2D for iso (no framework) — reassess at the Vite/Capacitor
 migration; PixiJS would be the natural upgrade then if richer 2D is wanted.

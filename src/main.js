@@ -1,7 +1,8 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
-import { DESIGN, HORIZON, MAX_DPR } from './config.js';
-import { plotAt, setBottomReserve } from './state.js';
+import { MAX_DPR, CONTROL_BAND } from './config.js';
+import { plotAt } from './state.js';
+import { computeLayout, L } from './layout.js';
 import { plantSeed, unlockPlot, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
@@ -17,10 +18,7 @@ const hudEl = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
 const bgCtx = bgCanvas.getContext('2d');
 
-const view = {
-  cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l: 0 },
-  winW: 0, winH: 0, horizonY: 0, fieldBottom: 0, // full-window backdrop geometry
-};
+const view = { dpr: 1, insets: { t: 0, r: 0, b: 0, l: 0 } };
 let showDebug = false;
 
 // Restore the save (with offline progress applied) or start fresh.
@@ -35,7 +33,8 @@ const hud = createHud({
   onLayoutChange() { scheduleLayout(); },
 });
 
-// --- Layout: fit design aspect inside usable area (viewport minus insets) ---
+// --- Adaptive layout: both canvases fill the window; the game lays out in
+// screen px (see layout.js). ---
 function readInsets() {
   const cs = getComputedStyle(document.documentElement);
   const px = (n) => parseFloat(cs.getPropertyValue(n)) || 0;
@@ -45,63 +44,34 @@ function readInsets() {
 function layout() {
   readInsets();
   const vp = window.visualViewport;
-  const availW = (vp ? vp.width : innerWidth) - view.insets.l - view.insets.r;
-  const availH = (vp ? vp.height : innerHeight) - view.insets.t - view.insets.b;
-
-  const scale = Math.min(availW / DESIGN.w, availH / DESIGN.h);
-  const cssW = Math.floor(DESIGN.w * scale);
-  const cssH = Math.floor(DESIGN.h * scale);
+  const winW = Math.round(vp ? vp.width : innerWidth);
+  const winH = Math.round(vp ? vp.height : innerHeight);
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+  view.dpr = dpr;
 
-  Object.assign(view, { cssW, cssH, dpr, scale: cssW / DESIGN.w });
-
-  canvas.style.width = cssW + 'px';
-  canvas.style.height = cssH + 'px';
-  canvas.width = Math.round(cssW * dpr);
-  canvas.height = Math.round(cssH * dpr);
-
-  const s = view.scale * dpr;
-  ctx.setTransform(s, 0, 0, s, 0, 0);
-
-  // Pin the HUD to the play field so it hugs the game on wide/letterboxed
-  // screens instead of floating out in the margins.
-  const rect = canvas.getBoundingClientRect();
-  hudEl.style.left = rect.left + 'px';
-  hudEl.style.top = rect.top + 'px';
-  hudEl.style.width = rect.width + 'px';
-  hudEl.style.height = rect.height + 'px';
-  hudEl.style.right = 'auto';
-  hudEl.style.bottom = 'auto';
-
-  // Reserve grid space for the actual measured height of the bottom control
-  // cluster (selector + hint + button), so plots never sit under it on any
-  // screen. The selector is the topmost bottom control.
+  // Measure the bottom control cluster (selector is its top) to reserve space
+  // so the grid never sits under the controls.
+  let reserveCss = CONTROL_BAND;
   const typesEl = hudEl.querySelector('.hud-types');
-  if (typesEl && view.scale > 0) {
-    const reserveCss = rect.bottom - typesEl.getBoundingClientRect().top;
-    setBottomReserve(reserveCss / view.scale + 10); // +gap
+  if (typesEl) {
+    const top = typesEl.getBoundingClientRect().top;
+    reserveCss = Math.max(CONTROL_BAND, Math.min(winH - top + 8, winH * 0.5));
   }
+  computeLayout(winW, winH, reserveCss);
 
-  // Full-window backdrop canvas, with the horizon aligned to the play field.
-  const winW = innerWidth, winH = innerHeight;
-  view.winW = winW;
-  view.winH = winH;
-  view.horizonY = rect.top + HORIZON * view.scale;
-  view.fieldBottom = rect.bottom;
-  bgCanvas.style.width = winW + 'px';
-  bgCanvas.style.height = winH + 'px';
-  bgCanvas.width = Math.round(winW * dpr);
-  bgCanvas.height = Math.round(winH * dpr);
-  bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  for (const [cv, cx] of [[canvas, ctx], [bgCanvas, bgCtx]]) {
+    cv.style.width = winW + 'px';
+    cv.style.height = winH + 'px';
+    cv.width = Math.round(winW * dpr);
+    cv.height = Math.round(winH * dpr);
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
 }
 
-// Map a pointer event (client px) to design-unit coordinates, or null if outside.
-function eventToDesign(e) {
+// Pointer event (client px) -> canvas/screen px.
+function eventToScreen(e) {
   const r = canvas.getBoundingClientRect();
-  const x = (e.clientX - r.left) / view.scale;
-  const y = (e.clientY - r.top) / view.scale;
-  if (x < 0 || y < 0 || x > DESIGN.w || y > DESIGN.h) return null;
-  return { x, y };
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
 // Stage-up celebration modal. While it's up the world is paused (the scene
@@ -133,7 +103,7 @@ function frame(now) {
       acc -= STEP;
     }
   }
-  renderBackdrop(bgCtx, state, view.winW, view.winH, view.horizonY, view.fieldBottom, now);
+  renderBackdrop(bgCtx, state, now);
   renderScene(ctx, state, now);
   hud.update(state);
   // A new milestone pauses the game and raises the celebration.
@@ -158,8 +128,8 @@ function updateDebug(now) {
   const i = view.insets;
   const m = state.meters;
   debugEl.textContent =
-    `field ${view.cssW}x${view.cssH}  ar ${(view.cssW / view.cssH).toFixed(3)}\n` +
-    `dpr ${view.dpr}  scale ${view.scale.toFixed(3)}\n` +
+    `win ${L.w}x${L.h}  dpr ${view.dpr}\n` +
+    `tile ${L.tw.toFixed(0)}  unit ${L.unit.toFixed(2)}  reserve ${L.reserve.toFixed(0)}\n` +
     `insets t${i.t} r${i.r} b${i.b} l${i.l}\n` +
     `soil ${m.soil.toFixed(2)} shade ${m.shade.toFixed(2)} humid ${m.humidity.toFixed(2)}\n` +
     `survival ${(survivalChance(state) * 100).toFixed(0)}%  fps ${fps}`;
@@ -174,8 +144,7 @@ function toggleDebug() {
 addEventListener('keydown', (e) => { if (e.key === 'd' || e.key === 'D') toggleDebug(); });
 addEventListener('pointerdown', (e) => {
   if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); return; } // above the eco panel
-  const p = eventToDesign(e);
-  if (!p) return;
+  const p = eventToScreen(e);
   const plotIndex = plotAt(state, p.x, p.y);
   if (plotIndex === -1) return;
   const plot = state.plots[plotIndex];

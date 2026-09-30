@@ -1,7 +1,8 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
-// transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
-import { DESIGN, ISO, GRID } from './config.js';
-import { tileCenter, getBottomReserve, plantHeight } from './state.js';
+// Draws the world in screen pixels using the adaptive layout (see layout.js).
+import { GRID } from './config.js';
+import { tileCenter, plantHeight } from './state.js';
+import { L } from './layout.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -171,16 +172,15 @@ function drawFigure(ctx, x, feetY, s = 1) {
   ctx.fill();
 }
 
-// Full-window backdrop: the current stage's sky/ground gradients, slightly
-// darkened so they recede behind the play field, with the horizon aligned to the
-// play field's horizon (horizonY is in the backdrop's CSS-pixel space).
-export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h, now = 0) {
+// Full-window backdrop: all decorative scenery — sky, sun, ground, grass,
+// wildlife, clouds, rain — across the whole viewport (screen px, from L).
+export function renderBackdrop(ctx, state, now = 0) {
+  const { w, h, horizonY } = L;
   const col = sceneColors(avgMeter(state));
   const cs = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
   const hy = Math.max(0, Math.min(h, horizonY));
-  // Match the play field's gradients exactly (same colors, same vertical extent
-  // as the field's sky/ground) so there is no seam — the world reads as one.
-  const groundBottom = Math.max(hy + 1, fieldBottom);
+  const avg = avgMeter(state);
+  const time = now / 1000;
 
   ctx.clearRect(0, 0, w, h);
   if (hy > 0) {
@@ -190,23 +190,16 @@ export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h, now 
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, hy);
   }
-  // Ground gradient spans horizon..fieldBottom to line up with the play field;
-  // fill any remaining space below with the bottom colour.
-  const gnd = ctx.createLinearGradient(0, hy, 0, groundBottom);
+  const gnd = ctx.createLinearGradient(0, hy, 0, h);
   gnd.addColorStop(0, cs(col.grTop));
   gnd.addColorStop(1, cs(col.grBot));
   ctx.fillStyle = gnd;
   ctx.fillRect(0, hy, w, h - hy);
 
-  const avg = avgMeter(state);
-  const time = now / 1000;
-
-  // Sun, grass and wildlife spread across the whole scene.
   drawSun(ctx, w * 0.74, hy * 0.42, avg, time);
   drawTufts(ctx, w, hy, h, avg);
   drawCritters(ctx, w, hy, h, avg, time);
 
-  // Rain over the whole scene.
   if (state.rain && state.rain.active) {
     ctx.fillStyle = 'rgba(40, 55, 70, 0.14)';
     ctx.fillRect(0, 0, w, h);
@@ -216,7 +209,7 @@ export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h, now 
 }
 
 export function renderScene(ctx, state, now = 0) {
-  const { w, h } = DESIGN;
+  const { w, h, tw, th, unit } = L;
   const time = now / 1000;
   const avg = avgMeter(state); // 0 desert .. 1 rainforest
 
@@ -226,8 +219,7 @@ export function renderScene(ctx, state, now = 0) {
 
   // Planting plots — isometric soil blocks, drawn back-to-front so nearer tiles
   // and taller plants overlap farther ones correctly. Tops green with progress.
-  const { tw, th } = ISO;
-  const depth = 6; // shallow raise so the field reads as terrain, not a floating slab
+  const depth = 6 * unit; // shallow raise; scales with tile size
 
   // Tile top derives from the SAME scene ground palette as the backdrop, lifted
   // slightly, so the platform reads as cultivated soil of the same land at every
@@ -252,7 +244,7 @@ export function renderScene(ctx, state, now = 0) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.font = `bold ${Math.round(12 * unit)}px system-ui, sans-serif`;
       ctx.fillText(`+${nextUnlock}💧`, c.x, c.y);
       continue;
     }
@@ -264,7 +256,7 @@ export function renderScene(ctx, state, now = 0) {
 
   // The lone man in the foreground, standing at the near-left of his field.
   const fl = tileCenter(0, GRID.rows - 1);
-  drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3);
+  drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3 * unit);
 
   // Transient feedback effects, on top of the plants.
   drawFx(ctx, state);
@@ -274,10 +266,8 @@ export function renderScene(ctx, state, now = 0) {
     drawRain(ctx, w, h, time);
   }
 
-  // Bottom control band — a subtle darkening so the HUD buttons have a footing
-  // and read as chrome rather than floating over the grid. Height matches the
-  // dynamically-measured control reserve.
-  const bandH = getBottomReserve();
+  // Bottom control band — a subtle darkening so the HUD buttons have a footing.
+  const bandH = L.reserve;
   const bandTop = h - bandH;
   const band = ctx.createLinearGradient(0, bandTop, 0, h);
   band.addColorStop(0, 'rgba(0,0,0,0)');
@@ -357,7 +347,7 @@ function drawFx(ctx, state) {
   for (const fx of state.fx) {
     const c = tileCenter(fx.col, fx.row);
     const cx = c.x;
-    const topY = c.y - ISO.th; // top vertex of the tile
+    const topY = c.y - L.th; // top vertex of the tile
     const t = fx.age / fx.ttl; // 0..1
     const alpha = 1 - t;
 
@@ -371,7 +361,7 @@ function drawFx(ctx, state) {
       ctx.strokeStyle = '#5fd15a';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(cx, c.y, 6 + t * ISO.tw, 0, Math.PI * 2);
+      ctx.arc(cx, c.y, 6 + t * L.tw, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = '#5fd15a';
       ctx.font = 'bold 18px system-ui, sans-serif';
@@ -470,7 +460,7 @@ function drawPlant(ctx, cx, baseY, plant) {
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
-    ctx.quadraticCurveTo(cx + 3, baseY - ISO.th * 0.6, cx + 9, baseY - ISO.th * 0.5);
+    ctx.quadraticCurveTo(cx + 3, baseY - L.th * 0.6, cx + 9, baseY - L.th * 0.5);
     ctx.stroke();
     return;
   }

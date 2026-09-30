@@ -1,19 +1,9 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
-import { DESIGN, HORIZON, GRID, ISO, CONTROL_BAND, STARTER_PLOTS } from './config.js';
+import { GRID, STARTER_PLOTS } from './config.js';
 import { START_WATER, TYPE_BY_ID, PLANT_TYPES } from './game.js';
+import { L } from './layout.js';
 
-// Bottom space (design units) reserved for the HUD controls. Set dynamically
-// from the measured DOM control height (main.layout) so the grid never sits
-// under the selector/buttons on any screen. Starts at the static fallback.
-let bottomReserve = CONTROL_BAND;
-export function setBottomReserve(units) {
-  // Clamp so the grid always keeps a usable height.
-  const gridTop = HORIZON + GRID.padTop;
-  const maxReserve = DESIGN.h - gridTop - 140;
-  bottomReserve = Math.max(CONTROL_BAND, Math.min(units, maxReserve));
-}
-export function getBottomReserve() { return bottomReserve; }
 
 export function createState() {
   const plots = [];
@@ -42,22 +32,9 @@ export function createState() {
   };
 }
 
-// Isometric grid origin (design units), centering the diamond grid in the ground
-// band between the horizon and the control reserve.
-export function isoOrigin() {
-  const { th, tw } = ISO;
-  const gridTop = HORIZON + 18;
-  const bandBottom = DESIGN.h - bottomReserve;
-  const bandCenter = (gridTop + bandBottom) / 2;
-  const oy = bandCenter - ((GRID.cols + GRID.rows - 2) / 2) * th;
-  const ox = DESIGN.w / 2 - ((GRID.cols - GRID.rows) / 2) * tw;
-  return { ox, oy };
-}
-
-// Screen (design-unit) center of a tile.
+// Screen (CSS px) center of a tile, from the adaptive layout.
 export function tileCenter(col, row) {
-  const { ox, oy } = isoOrigin();
-  return { x: ox + (col - row) * ISO.tw, y: oy + (col + row) * ISO.th };
+  return { x: L.ox + (col - row) * L.tw, y: L.oy + (col + row) * L.th };
 }
 
 // Drawn height (px) of a plant, capped so tall tiers don't tower over — and hide
@@ -65,10 +42,10 @@ export function tileCenter(col, row) {
 export function plantHeight(plant) {
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
   const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
-  return Math.min(ISO.th * 2.1 * growth * type.size, ISO.th * 3.1);
+  return Math.min(L.th * 2.1 * growth * type.size, L.th * 3.1);
 }
 
-// Which plot (if any) is under a point in design units. Plants are picked
+// Which plot (if any) is under a point in screen px. Plants are picked
 // front-to-back first (so tapping a plant selects ITS tile, never a hidden tile
 // behind it), then the ground tile via the inverse iso transform.
 export function plotAt(state, x, y) {
@@ -78,15 +55,14 @@ export function plotAt(state, x, y) {
   for (const p of planted) {
     const c = tileCenter(p.col, p.row);
     const hgt = plantHeight(p.plant);
-    if (x >= c.x - ISO.tw * 0.8 && x <= c.x + ISO.tw * 0.8 &&
-        y <= c.y + ISO.th * 0.6 && y >= c.y - hgt) {
+    if (x >= c.x - L.tw * 0.8 && x <= c.x + L.tw * 0.8 &&
+        y <= c.y + L.th * 0.6 && y >= c.y - hgt) {
       return p.row * GRID.cols + p.col;
     }
   }
-  const { ox, oy } = isoOrigin();
-  const px = x - ox, py = y - oy;
-  const col = Math.round((px / ISO.tw + py / ISO.th) / 2);
-  const row = Math.round((py / ISO.th - px / ISO.tw) / 2);
+  const px = x - L.ox, py = y - L.oy;
+  const col = Math.round((px / L.tw + py / L.th) / 2);
+  const row = Math.round((py / L.th - px / L.tw) / 2);
   if (col < 0 || row < 0 || col >= GRID.cols || row >= GRID.rows) return -1;
   return row * GRID.cols + col;
 }
