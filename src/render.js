@@ -3,7 +3,7 @@
 import { GRID } from './config.js';
 import { tileCenter, plantHeight } from './state.js';
 import { L } from './layout.js';
-import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
+import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -280,13 +280,22 @@ export function renderScene(ctx, state, now = 0, man = null) {
 
     const tc = p.planted ? shade(top, 0.9) : shade(top, 1.06);
     tileBlock(ctx, c.x, c.y, tw, th, depth, tc, shade(top, 0.55), shade(top, 0.72));
+    const bonus = tileBonus(state, p);
     if (p.plant) {
       drawPlant(ctx, c.x, c.y, p.plant);
+      // Mixed grove (3+ species around it): a small gold marker on the tile.
+      if (bonus.mixed && p.plant.status === 'alive') {
+        ctx.fillStyle = '#f6d365';
+        ctx.beginPath();
+        ctx.arc(c.x + tw * 0.55, c.y + th * 0.1, Math.max(2, th * 0.14), 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else {
-      // Empty, plantable: a subtle marker so open tiles stand out among plants.
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+      // Empty, plantable. Green when established neighbours will shelter a
+      // seedling here (a better spot), white otherwise.
+      ctx.fillStyle = bonus.nurse > 0 ? 'rgba(140, 240, 120, 0.75)' : 'rgba(255, 255, 255, 0.22)';
       ctx.beginPath();
-      ctx.arc(c.x, c.y, Math.max(2, th * 0.18), 0, Math.PI * 2);
+      ctx.arc(c.x, c.y, Math.max(2, th * (bonus.nurse > 0 ? 0.22 : 0.18)), 0, Math.PI * 2);
       ctx.fill();
     }
   }

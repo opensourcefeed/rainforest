@@ -1,6 +1,6 @@
 // Gameplay rules and actions. state.js holds data + geometry; this holds the
 // verbs and the per-frame world update.
-import { STARTER_PLOTS } from './config.js';
+import { STARTER_PLOTS, GRID } from './config.js';
 
 export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
 
@@ -266,7 +266,8 @@ export function waterRate(state) {
     const p = plot.plant;
     if (p && p.status === 'alive') {
       const type = TYPE_BY_ID[p.typeId] || PLANT_TYPES[0];
-      rate += WATER_YIELD * p.growth * humidity * type.yieldMul * yieldMulUp;
+      rate += WATER_YIELD * p.growth * humidity * type.yieldMul * yieldMulUp
+        * (tileBonus(state, plot).mixed ? MIXED_MUL : 1);
     }
   }
   if (state.rain) rate += RAIN_WATER * (state.rain.intensity || 0);
@@ -348,8 +349,43 @@ export function plantSeed(state, index) {
   plot.plant = { status: 'settling', age: 0, growth: 0, typeId: type.id };
   if (state.stats) state.stats.planted++;
   // Show the odds the player is up against, so failure reads as informative.
-  pushFx(state, plot.col, plot.row, 'chance', Math.round(survivalChance(state) * 100) + '%');
+  const sheltered = tileBonus(state, plot).nurse > 0;
+  pushFx(state, plot.col, plot.row, 'chance', Math.round(survivalAt(state, plot) * 100) + '%' + (sheltered ? ' 🌿' : ''));
   return true;
+}
+
+// --- Adjacency: plants help their neighbours (placement strategy) --------
+// Nurse plants: established neighbours shelter a seedling (+survival).
+// Shade: adjacent trees/canopies speed growth. Mixed grove: 3+ species around a
+// plant (itself included) boost its water yield.
+export const NURSE_BONUS = 0.06;  // survival per established neighbour
+export const SHADE_BONUS = 0.15;  // growth per adjacent tree/canopy
+export const MIXED_MUL = 1.3;     // yield multiplier for a mixed grove
+
+function neighbourPlants(state, plot) {
+  const out = [];
+  for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const c = plot.col + dc, r = plot.row + dr;
+    if (c < 0 || r < 0 || c >= GRID.cols || r >= GRID.rows) continue;
+    const n = state.plots[r * GRID.cols + c];
+    if (n && n.plant && n.plant.status === 'alive') out.push(n.plant);
+  }
+  return out;
+}
+
+// Bonuses a tile currently gets from its neighbours.
+export function tileBonus(state, plot) {
+  const nb = neighbourPlants(state, plot);
+  const nurse = nb.filter((p) => p.growth >= 0.5).length;
+  const shade = nb.filter((p) => tierOf(p.typeId) >= 3).length;
+  const kinds = new Set(nb.map((p) => p.typeId));
+  if (plot.plant) kinds.add(plot.plant.typeId);
+  return { nurse, shade, mixed: kinds.size >= 3 };
+}
+
+// Survival for a seedling on this specific tile (environment + nurse plants).
+export function survivalAt(state, plot) {
+  return Math.min(0.97, survivalChance(state) + NURSE_BONUS * tileBonus(state, plot).nurse);
 }
 
 // --- Tile actions: what a tap on a tile would do --------------------------
@@ -427,7 +463,7 @@ export function updateWorld(state, dt) {
     p.age += dt;
 
     if (p.status === 'settling' && p.age >= SETTLE_TIME) {
-      p.status = Math.random() < survivalChance(state) ? 'alive' : 'dead';
+      p.status = Math.random() < survivalAt(state, plot) ? 'alive' : 'dead';
       pushFx(state, plot.col, plot.row, p.status === 'alive' ? 'survive' : 'die');
       if (state.events && state.events.length < 40) state.events.push(p.status === 'alive' ? 'survive' : 'wither');
       p.age = 0; // reuse as time-in-status
@@ -436,8 +472,9 @@ export function updateWorld(state, dt) {
       plot.plant = null;
     } else if (p.status === 'alive') {
       const type = TYPE_BY_ID[p.typeId] || PLANT_TYPES[0];
+      const bonus = tileBonus(state, plot);
       const wasGrowing = p.growth < 1;
-      p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul);
+      p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul * (1 + SHADE_BONUS * bonus.shade));
       if (wasGrowing && p.growth >= 1 && state.events && state.events.length < 40) state.events.push('mature');
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
@@ -446,7 +483,8 @@ export function updateWorld(state, dt) {
       m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 2);
       m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 2);
       // Grove water yield — grows with the plant, humidity, tier, and upgrades.
-      state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul * yieldMulUp;
+      state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul * yieldMulUp
+        * (bonus.mixed ? MIXED_MUL : 1);
     }
   }
 

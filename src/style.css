@@ -733,3 +733,8 @@ html, body {
 }
 .toast.out { opacity: 0; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.celebrate-tip {
+  margin-top: 10px; font-size: 13px; line-height: 1.45;
+  color: #f6e7b0; opacity: 0.95;
+}

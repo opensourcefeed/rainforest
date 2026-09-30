@@ -11,6 +11,14 @@ const FLAVOR = {
   Rainforest: { emoji: '🌴', line: 'A living canopy, rivers and wildlife. The desert is gone.' },
 };
 
+// One gameplay tip per stage, teaching the adjacency bonuses as they matter.
+const TIPS = {
+  Scrubland: 'Seedlings next to established plants survive more often — look for the green dots.',
+  Grassland: 'Mix species: a plant with 3+ kinds around it earns extra water (gold dot).',
+  'Dry woodland': 'Trees shade their neighbours, so plants beside them grow faster.',
+  Rainforest: 'Select a better plant and tap an old one to upgrade it in place.',
+};
+
 const CONFETTI_COLORS = ['#f9c74f', '#90be6d', '#43aa8b', '#4d96ff', '#f94144', '#f3722c'];
 
 // A gentle real-world nudge shown on each stage — this forest is a game, but a
@@ -59,6 +67,7 @@ export function createCelebration({ onContinue }) {
           <div class="celebrate-kicker">New stage reached</div>
           <h2 class="celebrate-title">${milestone.name}</h2>
           <p class="celebrate-line">${f.line}</p>
+          ${TIPS[milestone.name] ? `<p class="celebrate-tip">💡 ${TIPS[milestone.name]}</p>` : ''}
           ${unlockHtml}
           <div class="celebrate-reward">Reward: +${milestone.bonus} 💧</div>
           <div class="celebrate-real"><span>🌱 In the real world</span>${real}</div>
