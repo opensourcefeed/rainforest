@@ -2,7 +2,7 @@
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
 import { plotAt } from './state.js';
-import { plantSeed, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
+import { plantSeed, unlockPlot, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
 import { loadGame, saveGame } from './save.js';
@@ -119,7 +119,10 @@ addEventListener('pointerdown', (e) => {
   const p = eventToDesign(e);
   if (!p) return;
   const plotIndex = plotAt(state, p.x, p.y);
-  if (plotIndex !== -1) plantSeed(state, plotIndex);
+  if (plotIndex === -1) return;
+  const plot = state.plots[plotIndex];
+  if (!plot.unlocked) unlockPlot(state, plotIndex); // tap locked land to buy it
+  else plantSeed(state, plotIndex);
 });
 
 let relayoutQueued = false;

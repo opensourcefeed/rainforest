@@ -5,6 +5,9 @@ export const MAX_DPR = 3; // cap so cheap high-DPI phones don't over-render
 
 export const HORIZON = DESIGN.h * 0.62; // sky/sand boundary
 
+// How many plots start unlocked; the rest are bought with water.
+export const STARTER_PLOTS = 4;
+
 // Reserved band (design units) at the bottom of the play field for the HUD
 // controls, so DOM buttons never overlap the grid. Sized generously because the
 // buttons are a fixed CSS-pixel height that maps to more design units on small

@@ -19,7 +19,7 @@ export function saveGame(state) {
       water: state.water,
       meters: state.meters,
       plots: state.plots.map((p) => ({
-        col: p.col, row: p.row, planted: p.planted, plant: p.plant,
+        col: p.col, row: p.row, unlocked: p.unlocked, planted: p.planted, plant: p.plant,
       })),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
@@ -46,6 +46,11 @@ export function loadGame() {
     if (data.meters) Object.assign(state.meters, data.meters);
     if (Array.isArray(data.plots) && data.plots.length === state.plots.length) {
       state.plots = data.plots;
+      // Migrate pre-expansion saves: no `unlocked` field means every plot was
+      // plantable, so unlock them all (don't strand an existing grove).
+      if (state.plots.some((p) => p.unlocked === undefined)) {
+        state.plots.forEach((p) => { p.unlocked = true; });
+      }
     }
     const elapsed = Math.max(0, (Date.now() - (data.t || Date.now())) / 1000);
     const capped = Math.min(elapsed, OFFLINE_CAP_SEC);

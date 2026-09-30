@@ -2,7 +2,7 @@
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
 import { DESIGN, HORIZON, CONTROL_BAND } from './config.js';
 import { plotRect } from './state.js';
-import { greening } from './game.js';
+import { greening, unlockCost } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -88,8 +88,32 @@ export function renderScene(ctx, state) {
   ctx.fill();
 
   // Planting plots
+  const nextUnlock = unlockCost(state);
   for (const p of state.plots) {
     const r = plotRect(p.col, p.row);
+
+    if (!p.unlocked) {
+      // Locked desert: dim, dashed, with a buy price.
+      ctx.fillStyle = 'rgba(28, 20, 8, 0.32)';
+      roundRect(ctx, r.x, r.y, r.w, r.h, 6);
+      ctx.fill();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 1.3;
+      roundRect(ctx, r.x, r.y, r.w, r.h, 6);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const cx = r.x + r.w / 2;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillText('+', cx, r.y + r.h * 0.38);
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillText(`${nextUnlock}💧`, cx, r.y + r.h * 0.68);
+      continue;
+    }
+
     ctx.fillStyle = p.planted ? 'rgba(60, 45, 22, 0.30)' : 'rgba(90, 62, 30, 0.18)';
     ctx.strokeStyle = 'rgba(74, 58, 36, 0.55)';
     ctx.lineWidth = 1.5;
@@ -145,6 +169,18 @@ function drawFx(ctx, state) {
       ctx.fillStyle = '#c65a3a';
       ctx.font = 'bold 18px system-ui, sans-serif';
       ctx.fillText('✕', cx, r.y - 4 - t * 14);
+    } else if (fx.kind === 'unlock') {
+      // Spent-water amount floats up in green.
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#7fe07a';
+      ctx.font = 'bold 15px system-ui, sans-serif';
+      ctx.fillText(fx.text, cx, r.y + r.h / 2 - t * 18);
+    } else if (fx.kind === 'need') {
+      // Can't afford — cost shown in red, held roughly in place.
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ef7a5a';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.fillText(fx.text, cx, r.y + r.h / 2 - t * 8);
     }
   }
   ctx.globalAlpha = 1;

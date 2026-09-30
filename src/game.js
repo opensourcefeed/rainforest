@@ -1,7 +1,44 @@
 // Gameplay rules and actions. state.js holds data + geometry; this holds the
 // verbs and the per-frame world update.
+import { STARTER_PLOTS } from './config.js';
 
 export const SEED_COST = 2; // cheap, but enough that water is a real early constraint
+
+// Land expansion: unlocking a plot costs water, rising with how many you own —
+// the main early water sink and sense of growth.
+const UNLOCK_BASE = 4;
+const UNLOCK_GROWTH = 1.35;
+
+export function unlockedCount(state) {
+  let n = 0;
+  for (const p of state.plots) if (p.unlocked) n++;
+  return n;
+}
+
+// Cost to unlock the next plot.
+export function unlockCost(state) {
+  const beyond = Math.max(0, unlockedCount(state) - STARTER_PLOTS);
+  return Math.ceil(UNLOCK_BASE * Math.pow(UNLOCK_GROWTH, beyond));
+}
+
+export function allUnlocked(state) {
+  return unlockedCount(state) >= state.plots.length;
+}
+
+// Try to unlock plot `index`. Handles its own feedback; returns true on success.
+export function unlockPlot(state, index) {
+  const plot = state.plots[index];
+  if (!plot || plot.unlocked) return false;
+  const cost = unlockCost(state);
+  if (state.water < cost) {
+    pushFx(state, plot.col, plot.row, 'need', `${cost}💧`);
+    return false;
+  }
+  state.water -= cost;
+  plot.unlocked = true;
+  pushFx(state, plot.col, plot.row, 'unlock', `−${cost}`);
+  return true;
+}
 
 // Plant lifecycle timing (seconds). Failure is quick so the player learns fast.
 const SETTLE_TIME = 1.2;     // seedling settles, then survival is rolled
@@ -28,7 +65,7 @@ export const START_WATER = 8;
 
 // Transient feedback effects. Kinds: 'chance' (survival % shown when planting),
 // 'survive' (green pop), 'die' (wither mark). Aged in updateWorld.
-export const FX_TTL = { chance: 1.1, survive: 0.9, die: 0.9 };
+export const FX_TTL = { chance: 1.1, survive: 0.9, die: 0.9, unlock: 1.0, need: 1.0 };
 
 function pushFx(state, col, row, kind, text) {
   state.fx.push({ col, row, kind, text, age: 0, ttl: FX_TTL[kind] });
@@ -84,7 +121,7 @@ export function survivalChance(state) {
 // Attempt to plant a seed in plot `index`. Returns true if it happened.
 export function plantSeed(state, index) {
   const plot = state.plots[index];
-  if (!plot || plot.planted) return false;
+  if (!plot || !plot.unlocked || plot.planted) return false;
   if (state.water < SEED_COST) return false;
 
   state.water -= SEED_COST;

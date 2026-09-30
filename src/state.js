@@ -1,13 +1,15 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
-import { DESIGN, HORIZON, GRID } from './config.js';
+import { DESIGN, HORIZON, GRID, STARTER_PLOTS } from './config.js';
 import { START_WATER } from './game.js';
 
 export function createState() {
   const plots = [];
   for (let row = 0; row < GRID.rows; row++) {
     for (let col = 0; col < GRID.cols; col++) {
-      plots.push({ col, row, planted: false });
+      // Start with a small unlocked patch (the first STARTER_PLOTS); the rest
+      // are locked desert bought with water.
+      plots.push({ col, row, planted: false, unlocked: plots.length < STARTER_PLOTS });
     }
   }
   return {
