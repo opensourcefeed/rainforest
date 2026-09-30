@@ -436,7 +436,9 @@ export function updateWorld(state, dt) {
       plot.plant = null;
     } else if (p.status === 'alive') {
       const type = TYPE_BY_ID[p.typeId] || PLANT_TYPES[0];
+      const wasGrowing = p.growth < 1;
       p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul);
+      if (wasGrowing && p.growth >= 1 && state.events && state.events.length < 40) state.events.push('mature');
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
       const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb;

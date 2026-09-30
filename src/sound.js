@@ -57,19 +57,59 @@ function blip(freq, dur, type = 'sine', vol = 0.3) {
 const arp = (notes, dur, type, vol) =>
   notes.forEach((f, i) => setTimeout(() => blip(f, dur, type, vol), i * 90));
 
+// Pitch slide (e.g. a falling "wither").
+function slide(f0, f1, dur, type = 'sine', vol = 0.3) {
+  if (!ctx || !enabled) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = type;
+  o.connect(g); g.connect(master);
+  const t = ctx.currentTime;
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+
+// Short filtered noise burst — the "dig" of a trowel in soil.
+function thump(vol = 0.5) {
+  if (!ctx || !enabled) return;
+  const len = Math.floor(ctx.sampleRate * 0.12);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = 900;
+  const g = ctx.createGain(); g.gain.value = vol;
+  src.connect(lp); lp.connect(g); g.connect(master);
+  src.start();
+}
+
 export const sfx = {
-  plant() { blip(520, 0.12, 'triangle', 0.22); },
-  collect() { blip(340, 0.1, 'sine', 0.18); },
-  unlock() { blip(440, 0.08, 'square', 0.14); setTimeout(() => blip(660, 0.12, 'square', 0.12), 60); },
-  upgrade() { arp([523, 659, 784], 0.16, 'triangle', 0.2); },
-  fanfare() { arp([523, 659, 784, 1047], 0.32, 'triangle', 0.24); },
-  // A plant takes root — bright two-note lift.
-  survive() { blip(700, 0.11, 'sine', 0.15); setTimeout(() => blip(950, 0.13, 'sine', 0.13), 55); },
-  // A seedling withers — soft low fall.
-  wither() { blip(250, 0.16, 'sine', 0.14); setTimeout(() => blip(175, 0.22, 'sine', 0.11), 70); },
+  // Planting: a soft dig + a small pop.
+  plant() { thump(0.55); setTimeout(() => blip(420, 0.12, 'triangle', 0.3), 40); },
+  collect() { blip(340, 0.1, 'sine', 0.26); setTimeout(() => blip(460, 0.1, 'sine', 0.2), 50); },
+  unlock() { thump(0.4); blip(440, 0.08, 'square', 0.16); setTimeout(() => blip(660, 0.14, 'square', 0.14), 60); },
+  upgrade() { arp([523, 659, 784], 0.16, 'triangle', 0.26); },
+  fanfare() { arp([523, 659, 784, 1047], 0.32, 'triangle', 0.3); },
+  // A seedling takes root — bright rising chime.
+  survive() { arp([660, 880, 1175], 0.16, 'sine', 0.26); },
+  // A seedling withers — a sad falling slide.
+  wither() { slide(360, 150, 0.45, 'triangle', 0.24); },
+  // A plant reaches full size — a light sparkle.
+  mature() { arp([1047, 1319, 1568], 0.12, 'triangle', 0.18); },
   // Advancing from the stage popup.
-  advance() { blip(540, 0.1, 'triangle', 0.2); setTimeout(() => blip(810, 0.2, 'triangle', 0.2), 90); },
+  advance() { blip(540, 0.1, 'triangle', 0.26); setTimeout(() => blip(810, 0.22, 'triangle', 0.26), 90); },
 };
+
+// Browsers can leave audio suspended (tab switch, autoplay); nudge it awake.
+export function resumeAudio() {
+  if (ctx && ctx.state === 'suspended') ctx.resume();
+}
 
 export function toggleMuted() {
   enabled = !enabled;

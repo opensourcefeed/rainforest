@@ -9,7 +9,7 @@ import { createHud } from './hud.js';
 import { createShop } from './shop.js';
 import { createQuests } from './quests.js';
 import { createPrestige } from './prestige.js';
-import { initAudio, setRain, sfx } from './sound.js';
+import { initAudio, resumeAudio, setRain, sfx } from './sound.js';
 import { loadGame, saveGame, clearSave } from './save.js';
 import { createSettings } from './settings.js';
 import { initOnboarding } from './onboarding.js';
@@ -178,6 +178,7 @@ function frame(now) {
     if (state.events.length) {
       if (state.events.includes('survive')) sfx.survive();
       if (state.events.includes('wither')) sfx.wither();
+      if (state.events.includes('mature')) sfx.mature();
       state.events.length = 0;
     }
   }
@@ -235,7 +236,7 @@ addEventListener('pointerdown', (e) => {
 });
 
 // Web Audio must start from a user gesture.
-addEventListener('pointerdown', () => initAudio(), { once: true });
+addEventListener('pointerdown', () => { initAudio(); resumeAudio(); });
 
 let relayoutQueued = false;
 function scheduleLayout() {
