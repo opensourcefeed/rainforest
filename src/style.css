@@ -78,6 +78,8 @@ html, body {
   backdrop-filter: blur(2px);
   overflow: hidden;
 }
+/* An author `display` overrides the UA [hidden] rule, so restore it explicitly. */
+.celebrate[hidden] { display: none; }
 .celebrate-card {
   width: 100%;
   max-width: 330px;
