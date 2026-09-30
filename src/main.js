@@ -8,6 +8,7 @@ import { createHud } from './hud.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
 import { initBoot } from './boot.js';
+import { createCelebration } from './celebrate.js';
 
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
@@ -86,6 +87,13 @@ function eventToDesign(e) {
   return { x, y };
 }
 
+// Stage-up celebration modal. While it's up the world is paused (the scene
+// still animates behind it); Continue clears the milestone and resumes.
+let paused = false;
+const celebrate = createCelebration({
+  onContinue() { state.milestone = null; paused = false; },
+});
+
 // --- Fixed-timestep loop ---------------------------------------------------
 const STEP = 1 / 60; // seconds per update
 let acc = 0;
@@ -99,13 +107,22 @@ function frame(now) {
   let elapsed = (now - last) / 1000;
   last = now;
   if (elapsed > 0.25) elapsed = 0.25; // clamp after tab was hidden
-  acc += elapsed;
-  while (acc >= STEP) {
-    update(STEP);
-    acc -= STEP;
+  if (paused) {
+    acc = 0; // no catch-up burst on resume
+  } else {
+    acc += elapsed;
+    while (acc >= STEP) {
+      update(STEP);
+      acc -= STEP;
+    }
   }
   renderScene(ctx, state, now);
   hud.update(state);
+  // A new milestone pauses the game and raises the celebration.
+  if (state.milestone && !paused) {
+    paused = true;
+    celebrate.show(state.milestone);
+  }
   updateDebug(now);
   requestAnimationFrame(frame);
 }

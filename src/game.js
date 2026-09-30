@@ -188,17 +188,15 @@ export function updateWorld(state, dt) {
     if (state.fx[i].age >= state.fx[i].ttl) state.fx.splice(i, 1);
   }
 
-  // Milestone: reward the player the first time they reach each new stage.
-  const stageIdx = currentStage(state).index;
-  if (stageIdx > state.stageReached) {
-    const bonus = Math.round(15 * Math.pow(3, stageIdx));
+  // Milestone: the first time each new stage is reached, advance one stage,
+  // grant a scaling water bonus, and raise a milestone for the celebration
+  // modal (which the caller shows while paused; cleared on Continue). One stage
+  // at a time so no celebration is skipped on a fast jump.
+  if (!state.milestone && currentStage(state).index > state.stageReached) {
+    state.stageReached += 1;
+    const bonus = Math.round(15 * Math.pow(3, state.stageReached));
     state.water += bonus;
-    state.milestone = { name: STAGES[stageIdx].name, bonus, age: 0 };
-    state.stageReached = stageIdx;
-  }
-  if (state.milestone) {
-    state.milestone.age += dt;
-    if (state.milestone.age > 3.6) state.milestone = null;
+    state.milestone = { name: STAGES[state.stageReached].name, bonus };
   }
 
   for (const plot of state.plots) {

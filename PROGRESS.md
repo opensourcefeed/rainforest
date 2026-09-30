@@ -82,6 +82,17 @@ Turning the beat-in-2-minutes prototype into a real economy loop.
       late stages take work: optimal-play pacing Scrubland ~1.2m → Rainforest ~6.5m. HUD now
       pinned to the play field on wide/letterboxed screens.
 
+### Polish batch (from playtest)
+- [x] **S23 — Fix controls/grid overlap.** Bottom reserve measured from real DOM control
+      height each layout; tidy locked-plot price labels.
+- [x] **S24 — Scene composition + character.** Raised horizon (bigger plots, filled sky);
+      lone man drawn as a recognizable figure; soft grass clumps instead of specks.
+- [x] **S25 — Animation.** Sun halo + pulse; fluttering butterflies, drifting birds, bobbing
+      animals.
+- [x] **S26 — Stage celebration modal.** Reaching a new stage pauses the game and shows a
+      confetti modal (stage art, flavor, +bonus, Continue). Fires once per stage, one at a
+      time; replaces the old corner banner.
+
 Next in Phase 1: rain events, ambient sound, real art, then migrate to Vite for Capacitor.
 
 ## Phase 0 status
