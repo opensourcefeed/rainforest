@@ -153,3 +153,19 @@ rain, animals, real art) after migrating to Vite for the Capacitor wrap.
 
 Phase 1 core loop is now full: plant → heal → expand → upgrade → rain → complete → prestige,
 with quests for direction and sound for feel. Remaining Phase 1: real art, then Vite/Capacitor.
+
+### Depth + fixes pass
+- [x] **S49 — Upgrade plants in place.** Select a better kind, tap an old plant. Taps that
+      would do nothing no longer send the man walking.
+- [x] **S50 — Settings, more quests, while-away.** ⚙️ sheet (sound, volume, replay story,
+      two-step reset); 8→10 quest types; "while you were away" toast.
+- [x] **S51 — Performance.** Static backdrop cached offscreen; clouds pre-rendered as sprites.
+- [x] **S52 — Adjacency bonuses.** Nurse plants (+survival), shade (+growth), mixed grove
+      (+yield); green/gold markers; stage tips teach each rule.
+- [x] **S53 — Harvest + care.** Fruit to tap on grown plants; thirsty plants pause until
+      watered (rain waters all). Collect button retires once rain arrives.
+- [x] **S54 — Real Grove + daily gift.** 🌍 sheet reads grove.json (published by deploy.sh,
+      empty until real entries are added — format in README); daily streak gift.
+- [x] **S55 — Balance pass.** `node tools/balance-sim.mjs`. Compressed tier multipliers,
+      softer growth/yield upgrades, cubic diminishing returns. Optimal bot: Scrubland 1.2m →
+      Rainforest 7.3m; casual bot: 2.4m → ~10m; late income ~11–16💧/s (was ~35).

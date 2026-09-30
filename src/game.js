@@ -9,10 +9,10 @@ export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
 // — the core strategy and the deeper water sink. `size`/`color` drive rendering.
 export const PLANT_TYPES = [
   { id: 'seed',   name: 'Hardy seed', emoji: '🌱', cost: 2,  minStage: 0, meterMul: 1.0, yieldMul: 0.0, growTime: 20, color: '#9ad152', size: 1.0 },
-  { id: 'cactus', name: 'Cactus',     emoji: '🌵', cost: 6,  minStage: 1, meterMul: 1.7, yieldMul: 0.5, growTime: 22, color: '#3fa47e', size: 1.15 },
-  { id: 'shrub',  name: 'Shrub',      emoji: '🌿', cost: 16, minStage: 2, meterMul: 2.7, yieldMul: 1.2, growTime: 26, color: '#6bb63f', size: 1.35 },
-  { id: 'tree',   name: 'Tree',       emoji: '🌳', cost: 40, minStage: 3, meterMul: 4.5, yieldMul: 2.4, growTime: 32, color: '#3f8f37', size: 1.7 },
-  { id: 'canopy', name: 'Canopy',     emoji: '🌴', cost: 95, minStage: 4, meterMul: 7.0, yieldMul: 4.2, growTime: 40, color: '#2a6f2e', size: 2.1 },
+  { id: 'cactus', name: 'Cactus',     emoji: '🌵', cost: 6,  minStage: 1, meterMul: 1.5, yieldMul: 0.4, growTime: 22, color: '#3fa47e', size: 1.15 },
+  { id: 'shrub',  name: 'Shrub',      emoji: '🌿', cost: 16, minStage: 2, meterMul: 2.1, yieldMul: 0.8, growTime: 26, color: '#6bb63f', size: 1.35 },
+  { id: 'tree',   name: 'Tree',       emoji: '🌳', cost: 40, minStage: 3, meterMul: 2.8, yieldMul: 1.3, growTime: 32, color: '#3f8f37', size: 1.7 },
+  { id: 'canopy', name: 'Canopy',     emoji: '🌴', cost: 95, minStage: 4, meterMul: 3.6, yieldMul: 1.9, growTime: 40, color: '#2a6f2e', size: 2.1 },
 ];
 export const TYPE_BY_ID = Object.fromEntries(PLANT_TYPES.map((t) => [t.id, t]));
 
@@ -227,7 +227,12 @@ export const MAX_SURVIVAL = 0.9;
 // How fast a single MATURE plant enriches each meter (per second). Small, so a
 // grove builds the environment gradually — progression should be felt over
 // minutes of tending, not seconds. (Feel pass, S10.)
-const METER_GAIN = 0.0008;
+const METER_GAIN = 0.0006;
+
+// Upgrade effect per level (Warm Sun / Deep Roots). Kept modest so maxed
+// upgrades don't flood the economy (balance pass S55).
+const UP_GROWTH = 0.08;
+const UP_YIELD = 0.10;
 
 // Slow passive water trickle so a player is never hard-stuck at 0 water, plus
 // how much a manual collect grants. (Feel pass, S10.)
@@ -282,7 +287,7 @@ function updateRain(state, dt) {
 export function waterRate(state) {
   let rate = WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03;
   const humidity = state.meters.humidity;
-  const yieldMulUp = (1 + upgradeLevel(state, 'yield') * 0.15) * legacyBonus(state);
+  const yieldMulUp = (1 + upgradeLevel(state, 'yield') * UP_YIELD) * legacyBonus(state);
   for (const plot of state.plots) {
     const p = plot.plant;
     if (p && p.status === 'alive' && !p.thirsty) {
@@ -496,8 +501,8 @@ export function actOnTile(state, index) {
 export function updateWorld(state, dt) {
   const m = state.meters;
   const lb = legacyBonus(state);
-  const growthMul = 1 + upgradeLevel(state, 'growth') * 0.12;
-  const yieldMulUp = (1 + upgradeLevel(state, 'yield') * 0.15) * lb;
+  const growthMul = 1 + upgradeLevel(state, 'growth') * UP_GROWTH;
+  const yieldMulUp = (1 + upgradeLevel(state, 'yield') * UP_YIELD) * lb;
   const raining = !!(state.rain && state.rain.intensity > 0.3);
   state.water += (WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03) * dt; // trickle
 
@@ -550,9 +555,9 @@ export function updateWorld(state, dt) {
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
       const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb;
-      m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 2);
-      m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 2);
-      m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 2);
+      m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 3);
+      m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 3);
+      m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 3);
       // Grove water yield — grows with the plant, humidity, tier, and upgrades.
       state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul * yieldMulUp
         * (bonus.mixed ? MIXED_MUL : 1);
