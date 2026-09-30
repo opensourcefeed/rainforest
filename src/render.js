@@ -335,11 +335,73 @@ function drawFx(ctx, state) {
   ctx.globalAlpha = 1;
 }
 
-// A small sprout centered in the plot, drawn per lifecycle state.
+function fillRound(ctx, x, y, w, h, rad) {
+  roundRect(ctx, x, y, w, h, rad);
+  ctx.fill();
+}
+function disc(ctx, x, y, rad) {
+  ctx.beginPath();
+  ctx.arc(x, y, rad, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Per-type silhouettes. Each gets (ctx, cx, baseY, size, color) where `size`
+// is the drawn height in px (already scaled by growth), and draws upward from
+// baseY (the soil). Kept simple but distinct.
+const SHAPES = {
+  seed(ctx, cx, baseY, s, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY - s); ctx.stroke();
+    ctx.fillStyle = color;
+    for (const d of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(cx + d * 5, baseY - s * 0.7, 5, 3, d * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+  cactus(ctx, cx, baseY, s, color) {
+    const w = Math.max(6, s * 0.26);
+    ctx.fillStyle = color;
+    fillRound(ctx, cx - w / 2, baseY - s, w, s, w / 2); // trunk
+    // two arms
+    const armW = w * 0.7, armY = baseY - s * 0.55;
+    fillRound(ctx, cx - w * 1.3, armY - s * 0.18, armW, s * 0.4, armW / 2);
+    fillRound(ctx, cx - w * 1.3, armY, w * 1.1, armW, armW / 2);
+    fillRound(ctx, cx + w * 0.6, armY - s * 0.3, armW, s * 0.42, armW / 2);
+    fillRound(ctx, cx + w * 0.2, armY, w * 1.1, armW, armW / 2);
+  },
+  shrub(ctx, cx, baseY, s, color) {
+    const rad = s * 0.5;
+    ctx.fillStyle = color;
+    disc(ctx, cx - rad * 0.75, baseY - rad * 0.7, rad * 0.72);
+    disc(ctx, cx + rad * 0.75, baseY - rad * 0.7, rad * 0.72);
+    disc(ctx, cx, baseY - rad * 1.1, rad * 0.85);
+    disc(ctx, cx, baseY - rad * 0.6, rad * 0.8);
+  },
+  tree(ctx, cx, baseY, s, color) {
+    const trunkH = s * 0.42;
+    ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = Math.max(2.5, s * 0.12); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY - trunkH); ctx.stroke();
+    const cr = (s - trunkH) * 0.62;
+    ctx.fillStyle = color;
+    disc(ctx, cx, baseY - trunkH - cr * 0.7, cr);
+  },
+  canopy(ctx, cx, baseY, s, color) {
+    const trunkH = s * 0.45;
+    ctx.strokeStyle = '#5a3b22'; ctx.lineWidth = Math.max(3, s * 0.14); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY - trunkH); ctx.stroke();
+    const cr = (s - trunkH) * 0.5;
+    ctx.fillStyle = color;
+    disc(ctx, cx - cr * 0.7, baseY - trunkH - cr * 0.6, cr * 0.9);
+    disc(ctx, cx + cr * 0.7, baseY - trunkH - cr * 0.6, cr * 0.9);
+    disc(ctx, cx, baseY - trunkH - cr * 1.25, cr * 1.05);
+  },
+};
+
+// Draw a plant in its plot, by type and lifecycle state.
 function drawPlant(ctx, r, plant) {
   const cx = r.x + r.w / 2;
-  const baseY = r.y + r.h * 0.72;
-  const stemH = r.h * 0.28;
+  const baseY = r.y + r.h * 0.9;
 
   if (plant.status === 'dead') {
     // Withered: drooped brown stem, no leaves.
@@ -348,40 +410,17 @@ function drawPlant(ctx, r, plant) {
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
-    ctx.quadraticCurveTo(cx + 3, baseY - stemH * 0.6, cx + 8, baseY - stemH * 0.5);
+    ctx.quadraticCurveTo(cx + 3, baseY - r.h * 0.2, cx + 9, baseY - r.h * 0.16);
     ctx.stroke();
     return;
   }
 
-  // settling (slightly translucent) or alive. Alive plants scale with growth
-  // and their type: a hardy sprout vs a big canopy tree.
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
-  const growth = plant.growth || 0;
-  const scale = plant.status === 'settling' ? 0.5 : 0.45 + 0.55 * growth;
-  const h = Math.min(r.h * 0.55 * scale * type.size, r.h * 1.6); // may overflow upward
-  const leafR = (4 + 5 * (plant.status === 'settling' ? 0 : growth)) * (0.7 + 0.3 * type.size);
+  const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
+  // Height in px, scaled by growth and tier size; may overflow the cell upward.
+  const s = Math.min(r.h * 0.6 * growth * type.size, r.h * 1.7);
 
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
-  ctx.strokeStyle = type.color;
-  ctx.lineWidth = 2 + type.size;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(cx, baseY);
-  ctx.lineTo(cx, baseY - h);
-  ctx.stroke();
-
-  ctx.fillStyle = type.color;
-  // Base pair of leaves.
-  for (const dir of [-1, 1]) {
-    ctx.beginPath();
-    ctx.ellipse(cx + dir * leafR * 0.8, baseY - h * 0.7, leafR, leafR * 0.6, dir * 0.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  // A canopy blob appears as the plant matures (bigger for higher tiers).
-  if (growth > 0.4 && plant.status === 'alive') {
-    ctx.beginPath();
-    ctx.arc(cx, baseY - h, leafR * 1.4 * growth * type.size, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, type.color);
   ctx.globalAlpha = 1;
 }
