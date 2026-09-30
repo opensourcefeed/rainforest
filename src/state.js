@@ -42,29 +42,18 @@ export function tileCenter(col, row) {
   return { x: L.ox + (col - row) * L.tw, y: L.oy + (col + row) * L.th };
 }
 
-// Drawn height (px) of a plant, capped so tall tiers don't tower over — and hide
-// — the tiles behind them. Render and hit-testing share this.
+// Drawn height (px) of a plant. Kept short (a bit over one tile) so tall tiers
+// don't tower over and hide the tiles behind them. Render + hit-testing share it.
 export function plantHeight(plant) {
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
   const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
-  return Math.min(L.th * 2.1 * growth * type.size, L.th * 3.1);
+  return Math.min(L.th * 1.7 * growth * type.size, L.th * 2.4);
 }
 
-// Which plot (if any) is under a point in screen px. Plants are picked
-// front-to-back first (so tapping a plant selects ITS tile, never a hidden tile
-// behind it), then the ground tile via the inverse iso transform.
+// Which plot is under a point (screen px) — purely by the ground tile diamond
+// (inverse iso transform), so EVERY tile is tappable by its own diamond
+// regardless of what's planted on neighbouring tiles.
 export function plotAt(state, x, y) {
-  const planted = state.plots
-    .filter((p) => p.plant)
-    .sort((a, b) => (b.col + b.row) - (a.col + a.row)); // nearest first
-  for (const p of planted) {
-    const c = tileCenter(p.col, p.row);
-    const hgt = plantHeight(p.plant);
-    if (x >= c.x - L.tw * 0.8 && x <= c.x + L.tw * 0.8 &&
-        y <= c.y + L.th * 0.6 && y >= c.y - hgt) {
-      return p.row * GRID.cols + p.col;
-    }
-  }
   const px = x - L.ox, py = y - L.oy;
   const col = Math.round((px / L.tw + py / L.th) / 2);
   const row = Math.round((py / L.th - px / L.tw) / 2);

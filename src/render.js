@@ -253,9 +253,17 @@ export function renderScene(ctx, state, now = 0) {
       continue;
     }
 
-    const tc = p.planted ? shade(top, 0.9) : shade(top, 1.0);
+    const tc = p.planted ? shade(top, 0.9) : shade(top, 1.06);
     tileBlock(ctx, c.x, c.y, tw, th, depth, tc, shade(top, 0.55), shade(top, 0.72));
-    if (p.plant) drawPlant(ctx, c.x, c.y, p.plant);
+    if (p.plant) {
+      drawPlant(ctx, c.x, c.y, p.plant);
+    } else {
+      // Empty, plantable: a subtle marker so open tiles stand out among plants.
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, Math.max(2, th * 0.18), 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // The lone man in the foreground, standing at the near-left of his field.
