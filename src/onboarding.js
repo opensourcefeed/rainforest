@@ -29,7 +29,16 @@ export function initOnboarding() {
       <div class="story-sun"></div>
       <div class="story-ground"></div>
       <div class="story-tree"><i class="trunk"></i><i class="crown"></i></div>
-      <div class="story-man"></div>
+      <svg class="story-man" viewBox="0 0 40 92" width="27" height="62" aria-hidden="true">
+        <ellipse cx="20" cy="13.5" rx="13" ry="3.2" fill="#33291a"/>
+        <rect x="14.5" y="5" width="11" height="9.5" rx="4.5" fill="#33291a"/>
+        <circle cx="20" cy="19" r="6" fill="#c79a63"/>
+        <path d="M12.5 27 Q20 23.5 27.5 27 L26 54 Q20 57 14 54 Z" fill="#4f6b3c"/>
+        <rect x="8.5" y="28" width="4.2" height="21" rx="2.1" fill="#4f6b3c" transform="rotate(9 10.6 28)"/>
+        <rect x="27.3" y="28" width="4.2" height="21" rx="2.1" fill="#4f6b3c" transform="rotate(-9 29.4 28)"/>
+        <rect x="14.6" y="53" width="4.8" height="27" rx="2.2" fill="#3a3320"/>
+        <rect x="20.6" y="53" width="4.8" height="27" rx="2.2" fill="#3a3320"/>
+      </svg>
     </div>
     <div class="story-panel">
       <p class="story-text"></p>

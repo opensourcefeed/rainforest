@@ -20,7 +20,10 @@ export function showLoader(duration, onDone) {
   requestAnimationFrame(() => { bar.style.width = '100%'; });
 
   setTimeout(() => {
+    // Hand off FIRST (first-run story overlay sits above the loader), then fade
+    // the loader out behind it — so the grid never flashes in the gap.
+    if (onDone) onDone();
     el.classList.add('loader-out');
-    setTimeout(() => { el.remove(); if (onDone) onDone(); }, 480);
+    setTimeout(() => el.remove(), 480);
   }, duration);
 }

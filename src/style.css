@@ -639,10 +639,9 @@ html, body {
 }
 
 .story-man {
-  position: absolute; left: calc(50% + 32px); bottom: 30%;
-  width: 6px; height: 22px; background: #3a2f1c; border-radius: 3px;
+  position: absolute; left: calc(50% + 30px); bottom: 30%;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
-.story-man::after { content: ''; position: absolute; top: -8px; left: -1px; width: 8px; height: 8px; border-radius: 50%; background: #3a2f1c; }
 
 .story-panel {
   position: relative;

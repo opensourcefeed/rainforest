@@ -377,7 +377,17 @@ function drawCritters(ctx, w, horizonY, h, avg, time) {
       y += Math.sin(time * 1.6 + c.ph) * 2.5;
     }
     ctx.globalAlpha = Math.min(1, (avg - c.at) / 0.08);
-    ctx.fillText(c.e, x, y);
+    if (c.m === 'fly') {
+      // The bird glyph faces left but birds drift right — mirror it so it faces
+      // its direction of travel (not flying backward).
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(-1, 1);
+      ctx.fillText(c.e, 0, 0);
+      ctx.restore();
+    } else {
+      ctx.fillText(c.e, x, y);
+    }
   }
   ctx.globalAlpha = 1;
 }
