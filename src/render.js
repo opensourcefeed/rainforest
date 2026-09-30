@@ -1,12 +1,22 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
-import { DESIGN, HORIZON, CONTROL_BAND } from './config.js';
-import { plotRect, getBottomReserve } from './state.js';
+import { DESIGN, HORIZON, CONTROL_BAND, ISO } from './config.js';
+import { tileCenter, getBottomReserve } from './state.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
+}
+
+// Isometric diamond path centered at (cx,cy) with half-width tw, half-height th.
+function diamond(ctx, cx, cy, tw, th) {
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - th);
+  ctx.lineTo(cx + tw, cy);
+  ctx.lineTo(cx, cy + th);
+  ctx.lineTo(cx - tw, cy);
+  ctx.closePath();
 }
 
 const lerpArr = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
@@ -212,38 +222,37 @@ export function renderScene(ctx, state, now = 0) {
   // The lone man, standing on the horizon just left of centre.
   drawFigure(ctx, w * 0.42, HORIZON, 1.15);
 
-  // Planting plots
+  // Planting plots — isometric diamond tiles, drawn back-to-front so nearer
+  // tiles and taller plants overlap farther ones correctly.
+  const { tw, th } = ISO;
   const nextUnlock = unlockCost(state);
-  for (const p of state.plots) {
-    const r = plotRect(p.col, p.row);
+  const ordered = [...state.plots].sort((a, b) => (a.col + a.row) - (b.col + b.row));
+  for (const p of ordered) {
+    const c = tileCenter(p.col, p.row);
+    diamond(ctx, c.x, c.y, tw, th);
 
     if (!p.unlocked) {
-      // Locked desert: dim, dashed, with a buy price.
-      ctx.fillStyle = 'rgba(28, 20, 8, 0.32)';
-      roundRect(ctx, r.x, r.y, r.w, r.h, 6);
+      ctx.fillStyle = 'rgba(28, 20, 8, 0.34)';
       ctx.fill();
       ctx.setLineDash([4, 3]);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
       ctx.lineWidth = 1.3;
-      roundRect(ctx, r.x, r.y, r.w, r.h, 6);
       ctx.stroke();
       ctx.setLineDash([]);
-      const cx = r.x + r.w / 2;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = 'bold 13px system-ui, sans-serif';
-      ctx.fillText(`+${nextUnlock}💧`, cx, r.y + r.h / 2);
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText(`+${nextUnlock}💧`, c.x, c.y);
       continue;
     }
 
-    ctx.fillStyle = p.planted ? 'rgba(60, 45, 22, 0.30)' : 'rgba(90, 62, 30, 0.18)';
-    ctx.strokeStyle = 'rgba(74, 58, 36, 0.55)';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, r.x, r.y, r.w, r.h, 6);
+    ctx.fillStyle = p.planted ? 'rgba(74, 54, 28, 0.5)' : 'rgba(120, 92, 50, 0.42)';
     ctx.fill();
+    ctx.strokeStyle = 'rgba(48, 36, 20, 0.6)';
+    ctx.lineWidth = 1.2;
     ctx.stroke();
-    if (p.plant) drawPlant(ctx, r, p.plant);
+    if (p.plant) drawPlant(ctx, c.x, c.y, th * 2.7, p.plant);
   }
 
   // Transient feedback effects, on top of the plants.
@@ -330,46 +339,42 @@ function drawFx(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const fx of state.fx) {
-    const r = plotRect(fx.col, fx.row);
-    const cx = r.x + r.w / 2;
+    const c = tileCenter(fx.col, fx.row);
+    const cx = c.x;
+    const topY = c.y - ISO.th; // top vertex of the tile
     const t = fx.age / fx.ttl; // 0..1
     const alpha = 1 - t;
 
     if (fx.kind === 'chance') {
-      // Odds float up from the plot and fade.
       ctx.globalAlpha = alpha;
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 15px system-ui, sans-serif';
-      ctx.fillText(fx.text, cx, r.y - 6 - t * 16);
+      ctx.fillText(fx.text, cx, topY - 6 - t * 16);
     } else if (fx.kind === 'survive') {
-      // Expanding green ring + check.
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = '#5fd15a';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(cx, r.y + r.h / 2, 6 + t * (r.w * 0.5), 0, Math.PI * 2);
+      ctx.arc(cx, c.y, 6 + t * ISO.tw, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = '#5fd15a';
       ctx.font = 'bold 18px system-ui, sans-serif';
-      ctx.fillText('✓', cx, r.y - 4 - t * 14);
+      ctx.fillText('✓', cx, topY - 4 - t * 14);
     } else if (fx.kind === 'die') {
-      // Red-brown cross drifting up and fading.
       ctx.globalAlpha = alpha;
       ctx.fillStyle = '#c65a3a';
       ctx.font = 'bold 18px system-ui, sans-serif';
-      ctx.fillText('✕', cx, r.y - 4 - t * 14);
+      ctx.fillText('✕', cx, topY - 4 - t * 14);
     } else if (fx.kind === 'unlock') {
-      // Spent-water amount floats up in green.
       ctx.globalAlpha = alpha;
       ctx.fillStyle = '#7fe07a';
       ctx.font = 'bold 15px system-ui, sans-serif';
-      ctx.fillText(fx.text, cx, r.y + r.h / 2 - t * 18);
+      ctx.fillText(fx.text, cx, c.y - t * 18);
     } else if (fx.kind === 'need') {
-      // Can't afford — cost shown in red, held roughly in place.
       ctx.globalAlpha = alpha;
       ctx.fillStyle = '#ef7a5a';
       ctx.font = 'bold 14px system-ui, sans-serif';
-      ctx.fillText(fx.text, cx, r.y + r.h / 2 - t * 8);
+      ctx.fillText(fx.text, cx, c.y - t * 8);
     }
   }
   ctx.globalAlpha = 1;
@@ -438,11 +443,9 @@ const SHAPES = {
   },
 };
 
-// Draw a plant in its plot, by type and lifecycle state.
-function drawPlant(ctx, r, plant) {
-  const cx = r.x + r.w / 2;
-  const baseY = r.y + r.h * 0.9;
-
+// Draw a plant standing on its iso tile. `cx,baseY` is the tile center (the
+// plant grows upward from there); `ref` is a size reference (tile height *k).
+function drawPlant(ctx, cx, baseY, ref, plant) {
   if (plant.status === 'dead') {
     // Withered: drooped brown stem, no leaves.
     ctx.strokeStyle = '#7a5a34';
@@ -450,15 +453,14 @@ function drawPlant(ctx, r, plant) {
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
-    ctx.quadraticCurveTo(cx + 3, baseY - r.h * 0.2, cx + 9, baseY - r.h * 0.16);
+    ctx.quadraticCurveTo(cx + 3, baseY - ref * 0.28, cx + 9, baseY - ref * 0.22);
     ctx.stroke();
     return;
   }
 
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
   const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
-  // Height in px, scaled by growth and tier size; may overflow the cell upward.
-  const s = Math.min(r.h * 0.6 * growth * type.size, r.h * 1.7);
+  const s = ref * growth * type.size; // drawn height in px (may overflow upward)
 
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
   (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, type.color);

@@ -14,6 +14,10 @@ export const STARTER_PLOTS = 4;
 // screens (see main.js scale).
 export const CONTROL_BAND = 120;
 
+// Isometric tile half-width / half-height (2:1 diamond). Screen position of a
+// tile is (ox + (col-row)*tw, oy + (col+row)*th).
+export const ISO = { tw: 42, th: 21 };
+
 // Planting grid, laid out in the sand region below the horizon and above the
 // control band.
 export const GRID = {

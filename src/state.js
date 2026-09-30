@@ -1,6 +1,6 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
-import { DESIGN, HORIZON, GRID, CONTROL_BAND, STARTER_PLOTS } from './config.js';
+import { DESIGN, HORIZON, GRID, ISO, CONTROL_BAND, STARTER_PLOTS } from './config.js';
 import { START_WATER } from './game.js';
 
 // Bottom space (design units) reserved for the HUD controls. Set dynamically
@@ -42,29 +42,31 @@ export function createState() {
   };
 }
 
-// Rectangle (in design units) for a plot at a given column/row.
-export function plotRect(col, row) {
-  const usableW = DESIGN.w - GRID.sideMargin * 2;
-  const gridTop = HORIZON + GRID.padTop;
-  const usableH = DESIGN.h - gridTop - bottomReserve;
-
-  const cellW = (usableW - GRID.gutter * (GRID.cols - 1)) / GRID.cols;
-  const cellH = (usableH - GRID.gutter * (GRID.rows - 1)) / GRID.rows;
-
-  return {
-    x: GRID.sideMargin + col * (cellW + GRID.gutter),
-    y: gridTop + row * (cellH + GRID.gutter),
-    w: cellW,
-    h: cellH,
-  };
+// Isometric grid origin (design units), centering the diamond grid in the ground
+// band between the horizon and the control reserve.
+export function isoOrigin() {
+  const { th, tw } = ISO;
+  const gridTop = HORIZON + 18;
+  const bandBottom = DESIGN.h - bottomReserve;
+  const bandCenter = (gridTop + bandBottom) / 2;
+  const oy = bandCenter - ((GRID.cols + GRID.rows - 2) / 2) * th;
+  const ox = DESIGN.w / 2 - ((GRID.cols - GRID.rows) / 2) * tw;
+  return { ox, oy };
 }
 
-// Which plot (if any) contains a point in design units. Returns index or -1.
+// Screen (design-unit) center of a tile.
+export function tileCenter(col, row) {
+  const { ox, oy } = isoOrigin();
+  return { x: ox + (col - row) * ISO.tw, y: oy + (col + row) * ISO.th };
+}
+
+// Which plot (if any) sits under a point in design units. Inverse iso transform
+// + rounding to the nearest tile; returns index or -1.
 export function plotAt(state, x, y) {
-  for (let i = 0; i < state.plots.length; i++) {
-    const p = state.plots[i];
-    const r = plotRect(p.col, p.row);
-    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return i;
-  }
-  return -1;
+  const { ox, oy } = isoOrigin();
+  const px = x - ox, py = y - oy;
+  const col = Math.round((px / ISO.tw + py / ISO.th) / 2);
+  const row = Math.round((py / ISO.th - px / ISO.tw) / 2);
+  if (col < 0 || row < 0 || col >= GRID.cols || row >= GRID.rows) return -1;
+  return row * GRID.cols + col;
 }
