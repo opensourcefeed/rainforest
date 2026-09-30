@@ -131,27 +131,29 @@ function drawFigure(ctx, x, feetY, s = 1) {
 // Full-window backdrop: the current stage's sky/ground gradients, slightly
 // darkened so they recede behind the play field, with the horizon aligned to the
 // play field's horizon (horizonY is in the backdrop's CSS-pixel space).
-export function renderBackdrop(ctx, state, w, h, horizonY) {
+export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h) {
   const col = sceneColors(avgMeter(state));
-  const d = 0.8; // recede
-  const dk = (c) => `rgb(${(c[0] * d) | 0},${(c[1] * d) | 0},${(c[2] * d) | 0})`;
+  const cs = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
   const hy = Math.max(0, Math.min(h, horizonY));
+  // Match the play field's gradients exactly (same colors, same vertical extent
+  // as the field's sky/ground) so there is no seam — the world reads as one.
+  const groundBottom = Math.max(hy + 1, fieldBottom);
 
   ctx.clearRect(0, 0, w, h);
   if (hy > 0) {
     const sky = ctx.createLinearGradient(0, 0, 0, hy);
-    sky.addColorStop(0, dk(col.skyTop));
-    sky.addColorStop(1, dk(col.skyBot));
+    sky.addColorStop(0, cs(col.skyTop));
+    sky.addColorStop(1, cs(col.skyBot));
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, hy);
   }
-  if (hy < h) {
-    const gnd = ctx.createLinearGradient(0, hy, 0, h);
-    gnd.addColorStop(0, dk(col.grTop));
-    gnd.addColorStop(1, dk(col.grBot));
-    ctx.fillStyle = gnd;
-    ctx.fillRect(0, hy, w, h - hy);
-  }
+  // Ground gradient spans horizon..fieldBottom to line up with the play field;
+  // fill any remaining space below with the bottom colour.
+  const gnd = ctx.createLinearGradient(0, hy, 0, groundBottom);
+  gnd.addColorStop(0, cs(col.grTop));
+  gnd.addColorStop(1, cs(col.grBot));
+  ctx.fillStyle = gnd;
+  ctx.fillRect(0, hy, w, h - hy);
 }
 
 export function renderScene(ctx, state, now = 0) {

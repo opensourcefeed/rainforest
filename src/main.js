@@ -19,7 +19,7 @@ const bgCtx = bgCanvas.getContext('2d');
 
 const view = {
   cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l: 0 },
-  winW: 0, winH: 0, horizonY: 0, // full-window backdrop geometry
+  winW: 0, winH: 0, horizonY: 0, fieldBottom: 0, // full-window backdrop geometry
 };
 let showDebug = false;
 
@@ -87,6 +87,7 @@ function layout() {
   view.winW = winW;
   view.winH = winH;
   view.horizonY = rect.top + HORIZON * view.scale;
+  view.fieldBottom = rect.bottom;
   bgCanvas.style.width = winW + 'px';
   bgCanvas.style.height = winH + 'px';
   bgCanvas.width = Math.round(winW * dpr);
@@ -132,7 +133,7 @@ function frame(now) {
       acc -= STEP;
     }
   }
-  renderBackdrop(bgCtx, state, view.winW, view.winH, view.horizonY);
+  renderBackdrop(bgCtx, state, view.winW, view.winH, view.horizonY, view.fieldBottom);
   renderScene(ctx, state, now);
   hud.update(state);
   // A new milestone pauses the game and raises the celebration.
