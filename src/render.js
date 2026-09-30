@@ -1,6 +1,6 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
-import { DESIGN, HORIZON, CONTROL_BAND, ISO } from './config.js';
+import { DESIGN, HORIZON, CONTROL_BAND, ISO, GRID } from './config.js';
 import { tileCenter, getBottomReserve } from './state.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
@@ -237,13 +237,23 @@ export function renderScene(ctx, state, now = 0) {
   // Wildlife returns as the land recovers (fades in past each threshold).
   drawCritters(ctx, avg, time);
 
-  // The lone man, standing on the horizon just left of centre.
-  drawFigure(ctx, w * 0.42, HORIZON, 1.15);
-
   // Planting plots — isometric soil blocks, drawn back-to-front so nearer tiles
   // and taller plants overlap farther ones correctly. Tops green with progress.
   const { tw, th } = ISO;
   const depth = 10;
+
+  // Soft drop shadow that grounds the whole platform to the terrain.
+  const left = tileCenter(0, GRID.rows - 1).x - tw;
+  const right = tileCenter(GRID.cols - 1, 0).x + tw;
+  const shadowY = tileCenter(GRID.cols - 1, GRID.rows - 1).y + th + depth - 2;
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = '#08160a';
+  ctx.beginPath();
+  ctx.ellipse((left + right) / 2, shadowY, (right - left) / 2 * 0.98, th * 1.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
   const soil = [150, 112, 64], grass = [96, 150, 70];
   const top = lerpArr(soil, grass, Math.min(1, avg * 1.1));
   const shade = (c, k) => `rgb(${(c[0] * k) | 0},${(c[1] * k) | 0},${(c[2] * k) | 0})`;
@@ -274,6 +284,10 @@ export function renderScene(ctx, state, now = 0) {
     tileBlock(ctx, c.x, c.y, tw, th, depth, tc, shade(top, 0.55), shade(top, 0.72));
     if (p.plant) drawPlant(ctx, c.x, c.y, th * 2.7, p.plant);
   }
+
+  // The lone man in the foreground, standing at the near-left of his field.
+  const fl = tileCenter(0, GRID.rows - 1);
+  drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3);
 
   // Transient feedback effects, on top of the plants.
   drawFx(ctx, state);
