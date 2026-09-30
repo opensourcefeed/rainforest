@@ -1,7 +1,7 @@
 // Upgrades shop overlay — spend water on permanent boosts.
 import { UPGRADES, upgradeLevel, upgradeCost, buyUpgrade } from './game.js';
 
-export function createShop(state) {
+export function createShop(state, onBuy) {
   const overlay = document.createElement('div');
   overlay.className = 'shop';
   overlay.hidden = true;
@@ -47,7 +47,7 @@ export function createShop(state) {
 
   list.addEventListener('click', (e) => {
     const b = e.target.closest('[data-id]');
-    if (b && buyUpgrade(state, b.dataset.id)) render();
+    if (b && buyUpgrade(state, b.dataset.id)) { if (onBuy) onBuy(); render(); }
   });
 
   return {

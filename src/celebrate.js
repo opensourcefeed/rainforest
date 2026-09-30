@@ -1,6 +1,7 @@
 // Stage-up celebration modal. Fires once per stage (milestones are guarded by
 // stageReached), so it's a memorable payoff, not a nag. The caller pauses the
 // game while it's shown and resumes on Continue.
+import { sfx } from './sound.js';
 
 const FLAVOR = {
   Scrubland: { emoji: '🌵', line: 'Cacti take hold and shade begins to cool the ground.' },
@@ -56,6 +57,7 @@ export function createCelebration({ onContinue }) {
           <button type="button" class="celebrate-btn">Continue</button>
         </div>`;
       overlay.hidden = false;
+      sfx.fanfare();
       const btn = overlay.querySelector('.celebrate-btn');
       btn.addEventListener('click', () => {
         overlay.hidden = true;

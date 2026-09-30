@@ -7,6 +7,7 @@ import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount } fro
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
+import { initAudio, setRain, sfx, toggleMuted, isEnabled } from './sound.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
@@ -27,11 +28,13 @@ const state = loadGame();
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
-const shop = createShop(state);
+const shop = createShop(state, () => sfx.upgrade());
 const hud = createHud({
-  onCollectWater() { state.water += collectAmount(state); },
+  onCollectWater() { state.water += collectAmount(state); sfx.collect(); },
   onSelectType(id) { state.selectedType = id; },
   onOpenShop() { shop.open(); },
+  onToggleMute() { return toggleMuted(); },
+  soundEnabled: isEnabled(),
   // Selector height changes when a new tier unlocks; re-measure the reserve.
   onLayoutChange() { scheduleLayout(); },
 });
@@ -110,6 +113,7 @@ function frame(now) {
   renderScene(ctx, state, now);
   hud.update(state);
   shop.refresh(); // keep affordability current while open
+  setRain(state.rain ? state.rain.intensity : 0);
   // A new milestone pauses the game and raises the celebration.
   if (state.milestone && !paused) {
     paused = true;
@@ -152,9 +156,12 @@ addEventListener('pointerdown', (e) => {
   const plotIndex = plotAt(state, p.x, p.y);
   if (plotIndex === -1) return;
   const plot = state.plots[plotIndex];
-  if (!plot.unlocked) unlockPlot(state, plotIndex); // tap locked land to buy it
-  else plantSeed(state, plotIndex);
+  if (!plot.unlocked) { if (unlockPlot(state, plotIndex)) sfx.unlock(); } // tap locked land
+  else if (plantSeed(state, plotIndex)) sfx.plant();
 });
+
+// Web Audio must start from a user gesture.
+addEventListener('pointerdown', () => initAudio(), { once: true });
 
 let relayoutQueued = false;
 function scheduleLayout() {
