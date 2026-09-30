@@ -203,24 +203,33 @@ function drawWater(ctx, w, horizonY, h, avg, time) {
   const hgt = (0.035 + 0.11 * t) * gb;
   const cx = (0.24 + 0.26 * t) * w;              // off to the side → centred
   const left = cx - width / 2;
+  const hash = (i) => { const s = Math.sin(i * 127.1) * 43758.5; return s - Math.floor(s); };
 
+  // Damp, grassy bank — a slightly larger, darker ellipse so the water sits in
+  // the ground instead of floating as a blue blob.
+  ctx.fillStyle = 'rgba(52, 76, 38, 0.55)';
+  ctx.beginPath();
+  ctx.ellipse(cx, y, width / 2 + 6 * u, hgt + 5 * u, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Water body.
   const grad = ctx.createLinearGradient(0, y - hgt, 0, y + hgt);
-  grad.addColorStop(0, '#74bdea');
-  grad.addColorStop(1, '#2d6cad');
+  grad.addColorStop(0, '#7cc2ee');
+  grad.addColorStop(1, '#2f72b2');
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.ellipse(cx, y, width / 2, hgt, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.lineWidth = 1.5 * u;
-  ctx.strokeStyle = 'rgba(205, 238, 255, 0.5)';
+  ctx.strokeStyle = 'rgba(210, 240, 255, 0.55)';
   ctx.stroke();
 
-  // Shimmer / current — more and faster as it grows into a flowing river.
+  // Shimmer / current — clipped to the water, more and faster as it grows.
   ctx.save();
   ctx.beginPath();
   ctx.ellipse(cx, y, width / 2, hgt, 0, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = 'rgba(207, 238, 255, 0.5)';
+  ctx.fillStyle = 'rgba(212, 240, 255, 0.5)';
   const n = 3 + ((t * 5) | 0);
   for (let i = 0; i < n; i++) {
     const sx = left + ((i * 113 + time * (18 + 42 * t)) % width);
@@ -230,6 +239,23 @@ function drawWater(ctx, w, horizonY, h, avg, time) {
     ctx.fill();
   }
   ctx.restore();
+
+  // Reeds along the near (front) bank, gently swaying.
+  ctx.strokeStyle = '#3d7a2c';
+  ctx.lineCap = 'round';
+  const reeds = 8 + ((t * 16) | 0);
+  for (let i = 0; i < reeds; i++) {
+    const dxn = (hash(i) * 1.9 - 0.95); // -0.95..0.95 across the front
+    const rx = cx + dxn * (width / 2);
+    const edgeY = y + hgt * Math.sqrt(Math.max(0, 1 - dxn * dxn));
+    const rh = (4 + hash(i + 99) * 6) * u;
+    const sway = Math.sin(time * 1.5 + i) * 1.6 * u;
+    ctx.lineWidth = 1.3 * u;
+    ctx.beginPath();
+    ctx.moveTo(rx, edgeY + 1);
+    ctx.quadraticCurveTo(rx + sway * 0.5, edgeY - rh * 0.6, rx + sway, edgeY - rh);
+    ctx.stroke();
+  }
 }
 
 // Offscreen cache of the backdrop's static layer (sky, ground, grass). It only
@@ -286,7 +312,7 @@ export function renderBackdrop(ctx, state, now = 0) {
   // intensity so nothing pops on/off.
   if (rainI > 0.01) {
     drawClouds(ctx, w, hy, time, rainI);
-    ctx.fillStyle = `rgba(38, 52, 66, ${0.24 * rainI})`;
+    ctx.fillStyle = `rgba(44, 58, 72, ${0.15 * rainI})`;
     ctx.fillRect(0, 0, w, h);
     drawRain(ctx, w, h, time, 0, rainI);
   }
@@ -473,8 +499,8 @@ function cloudSpriteSet() {
     const s = c.s * L.unit;
     return {
       s,
-      fair: paint(s, [236, 239, 243], [196, 201, 210]),  // sunlit
-      storm: paint(s, [150, 158, 170], [96, 105, 120]),  // storm
+      fair: paint(s, [240, 243, 247], [204, 210, 218]),  // sunlit
+      storm: paint(s, [186, 193, 203], [140, 149, 163]), // overcast (lighter)
     };
   });
   cloudSpriteKey = key;
@@ -483,7 +509,7 @@ function cloudSpriteSet() {
 
 // Clouds fade in with intensity, darken as the storm builds, and slide across.
 function drawClouds(ctx, w, horizonY, time, intensity) {
-  const alpha = Math.min(1, 0.35 + intensity * 0.65);
+  const alpha = Math.min(0.82, 0.32 + intensity * 0.5);
   const sprites = cloudSpriteSet();
   CLOUDS.forEach((c, i) => {
     const { s, fair, storm } = sprites[i];
