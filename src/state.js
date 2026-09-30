@@ -21,6 +21,8 @@ export function createState() {
     meters: { soil: 0, shade: 0, humidity: 0 },
     selectedType: 'seed', // which plant type the next tap plants
     upgrades: {}, // permanent upgrade levels bought with water (see game.UPGRADES)
+    stats: { planted: 0, collected: 0, unlocked: 0, upgraded: 0 }, // cumulative, for quests
+    quests: [], // active quest instances (assigned by game.initQuests)
     stageReached: 0, // highest stage index rewarded (so bonuses fire once)
     milestone: null, // transient {name, bonus, age} for the reward banner
     // Rain: unlocks once humidity is high enough, then cycles. `intensity` eases

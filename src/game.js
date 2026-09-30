@@ -53,7 +53,49 @@ export function buyUpgrade(state, id) {
   if (lvl >= u.max || state.water < upgradeCost(state, id)) return false;
   state.water -= upgradeCost(state, id);
   state.upgrades[id] = lvl + 1;
+  if (state.stats) state.stats.upgraded++;
   return true;
+}
+
+// --- Quests: rotating goals that reward water (direction + activity) --------
+export const QUEST_POOL = [
+  { key: 'plant', metric: (s) => s.stats.planted, goals: [5, 12, 25], reward: (g) => g * 3, text: (g) => `Plant ${g} seeds` },
+  { key: 'living', abs: true, metric: (s) => livingCount(s), goals: [4, 8, 15], reward: (g) => g * 5, text: (g) => `Have ${g} plants growing at once` },
+  { key: 'unlock', abs: true, metric: (s) => unlockedCount(s), goals: [8, 14, 20], reward: (g) => g * 4, text: (g) => `Expand your land to ${g} plots` },
+  { key: 'collect', metric: (s) => s.stats.collected, goals: [10, 25, 50], reward: (g) => g * 2, text: (g) => `Collect water ${g} times` },
+  { key: 'upgrade', metric: (s) => s.stats.upgraded, goals: [1, 3, 6], reward: (g) => g * 25, text: (g) => `Buy ${g} upgrade${g > 1 ? 's' : ''}` },
+];
+
+function makeQuest(tmpl, state) {
+  const goal = tmpl.goals[Math.floor(Math.random() * tmpl.goals.length)];
+  return { key: tmpl.key, goal, base: tmpl.abs ? 0 : tmpl.metric(state) };
+}
+export function initQuests(state) {
+  if (!state.quests) state.quests = [];
+  const used = new Set(state.quests.map((q) => q.key));
+  const pool = QUEST_POOL.filter((t) => !used.has(t.key));
+  while (state.quests.length < 3 && pool.length) {
+    state.quests.push(makeQuest(pool.splice(Math.floor(Math.random() * pool.length), 1)[0], state));
+  }
+}
+export function questInfo(state, q) {
+  const t = QUEST_POOL.find((x) => x.key === q.key);
+  const cur = Math.max(0, t.metric(state) - q.base);
+  return { text: t.text(q.goal), cur: Math.min(cur, q.goal), goal: q.goal, done: cur >= q.goal, reward: t.reward(q.goal) };
+}
+export function anyClaimable(state) {
+  return (state.quests || []).some((q) => questInfo(state, q).done);
+}
+export function claimQuest(state, index) {
+  const q = state.quests[index];
+  if (!q) return 0;
+  const info = questInfo(state, q);
+  if (!info.done) return 0;
+  state.water += info.reward;
+  const others = new Set(state.quests.filter((_, i) => i !== index).map((x) => x.key));
+  const cands = QUEST_POOL.filter((t) => !others.has(t.key));
+  state.quests[index] = makeQuest(cands[Math.floor(Math.random() * cands.length)], state);
+  return info.reward;
 }
 
 // Effective values after upgrades.
@@ -97,6 +139,7 @@ export function unlockPlot(state, index) {
   }
   state.water -= cost;
   plot.unlocked = true;
+  if (state.stats) state.stats.unlocked++;
   pushFx(state, plot.col, plot.row, 'unlock', `−${cost}`);
   return true;
 }
@@ -253,6 +296,7 @@ export function plantSeed(state, index) {
   state.water -= cost;
   plot.planted = true;
   plot.plant = { status: 'settling', age: 0, growth: 0, typeId: type.id };
+  if (state.stats) state.stats.planted++;
   // Show the odds the player is up against, so failure reads as informative.
   pushFx(state, plot.col, plot.row, 'chance', Math.round(survivalChance(state) * 100) + '%');
   return true;

@@ -2,9 +2,9 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable } from './game.js';
 
-export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onToggleMute, soundEnabled }) {
+export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onToggleMute, soundEnabled }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -73,7 +73,15 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   shopBtn.textContent = '🛠️';
   shopBtn.addEventListener('click', onOpenShop);
 
-  actions.append(collect, shopBtn);
+  const goalsBtn = document.createElement('button');
+  goalsBtn.className = 'hud-btn hud-btn-sec';
+  goalsBtn.type = 'button';
+  goalsBtn.setAttribute('aria-label', 'Goals');
+  goalsBtn.innerHTML = '🎯<span class="hud-dot" hidden></span>';
+  goalsBtn.addEventListener('click', onOpenQuests);
+  const goalsDot = goalsBtn.querySelector('.hud-dot');
+
+  actions.append(collect, shopBtn, goalsBtn);
 
   root.append(stage, rain, eco, water, living, sound, types, hint, actions);
 
@@ -126,6 +134,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
       }
 
       rain.hidden = !(state.rain && state.rain.intensity > 0.15);
+      goalsDot.hidden = !anyClaimable(state);
 
       // Meter bars.
       bars.soil.style.width = (state.meters.soil * 100).toFixed(1) + '%';

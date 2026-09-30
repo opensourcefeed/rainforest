@@ -3,10 +3,11 @@
 import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt } from './state.js';
 import { computeLayout, L } from './layout.js';
-import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount } from './game.js';
+import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount, initQuests } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
+import { createQuests } from './quests.js';
 import { initAudio, setRain, sfx, toggleMuted, isEnabled } from './sound.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
@@ -25,14 +26,17 @@ let showDebug = false;
 
 // Restore the save (with offline progress applied) or start fresh.
 const state = loadGame();
+initQuests(state); // assign starting goals if none
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
 const shop = createShop(state, () => sfx.upgrade());
+const quests = createQuests(state, () => sfx.upgrade());
 const hud = createHud({
-  onCollectWater() { state.water += collectAmount(state); sfx.collect(); },
+  onCollectWater() { state.water += collectAmount(state); if (state.stats) state.stats.collected++; sfx.collect(); },
   onSelectType(id) { state.selectedType = id; },
   onOpenShop() { shop.open(); },
+  onOpenQuests() { quests.open(); },
   onToggleMute() { return toggleMuted(); },
   soundEnabled: isEnabled(),
   // Selector height changes when a new tier unlocks; re-measure the reserve.
@@ -113,6 +117,7 @@ function frame(now) {
   renderScene(ctx, state, now);
   hud.update(state);
   shop.refresh(); // keep affordability current while open
+  quests.refresh();
   setRain(state.rain ? state.rain.intensity : 0);
   // A new milestone pauses the game and raises the celebration.
   if (state.milestone && !paused) {

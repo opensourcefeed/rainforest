@@ -404,6 +404,40 @@ html, body {
 .shop-buy:disabled { cursor: default; }
 .shop-buy:not(:disabled):active { filter: brightness(0.95); }
 
+/* claimable dot on the Goals button */
+.hud-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #ff5a4d; box-shadow: 0 0 0 2px #3a4a2e;
+}
+.hud-btn-sec { position: relative; }
+
+/* --- Goals (quests) — reuses shop card styling ------------------------- */
+.quests { position: fixed; inset: 0; z-index: 45; display: grid; place-items: end center; background: rgba(10, 16, 8, 0.55); }
+.quests[hidden] { display: none; }
+.quests-card {
+  width: 100%; max-width: 440px; max-height: 82vh; display: flex; flex-direction: column;
+  padding: 16px 16px calc(var(--safe-b) + 16px);
+  background: #22301d; border-radius: 20px 20px 0 0; color: #eef3ea;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4); animation: shopUp 0.25s ease;
+}
+.quests-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.quests-head h2 { font-size: 20px; font-weight: 800; flex: 1; }
+.quests-close { background: rgba(255, 255, 255, 0.12); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 15px; cursor: pointer; }
+.quests-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.quest-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255, 255, 255, 0.06); border-radius: 12px; }
+.quest-info { flex: 1; min-width: 0; }
+.quest-text { font-size: 14px; font-weight: 600; }
+.quest-bar { margin: 7px 0 3px; height: 7px; background: rgba(255, 255, 255, 0.14); border-radius: 999px; overflow: hidden; }
+.quest-bar > i { display: block; height: 100%; background: #6fe06a; border-radius: 999px; transition: width 0.3s; }
+.quest-prog { font-size: 11px; opacity: 0.75; font-variant-numeric: tabular-nums; }
+.quest-claim {
+  flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: none; border-radius: 999px;
+  background: #4faf47; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation;
+}
+.quest-claim.off { background: #46503c; color: rgba(255, 255, 255, 0.5); cursor: default; }
+.quest-claim:not(:disabled):active { filter: brightness(0.95); }
+
 /* --- Loading screen ----------------------------------------------------- */
 .loader {
   position: fixed;
