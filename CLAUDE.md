@@ -116,4 +116,7 @@ Rules: never start a new slice before the previous one is committed. The last co
 always be playable. On resume, read `PROGRESS.md` first to pick up cleanly.
 
 ## Current step
-Start Phase 0: build a playable browser prototype of stages 1–2.
+Phases 0–1 gameplay is built and deployed (see PROGRESS.md): full 5-stage loop, isometric
+adaptive layout, economy/upgrades/quests/prestige, adjacency, harvest + care, weather, sound,
+Real Grove (needs real tree entries in grove.json). Next: real-device playtest + tuning with
+`node tools/balance-sim.mjs`, the real-art pass, then Phase 2 (Vite + Capacitor).
