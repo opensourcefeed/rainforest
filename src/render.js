@@ -128,6 +128,32 @@ function drawFigure(ctx, x, feetY, s = 1) {
   ctx.fill();
 }
 
+// Full-window backdrop: the current stage's sky/ground gradients, slightly
+// darkened so they recede behind the play field, with the horizon aligned to the
+// play field's horizon (horizonY is in the backdrop's CSS-pixel space).
+export function renderBackdrop(ctx, state, w, h, horizonY) {
+  const col = sceneColors(avgMeter(state));
+  const d = 0.8; // recede
+  const dk = (c) => `rgb(${(c[0] * d) | 0},${(c[1] * d) | 0},${(c[2] * d) | 0})`;
+  const hy = Math.max(0, Math.min(h, horizonY));
+
+  ctx.clearRect(0, 0, w, h);
+  if (hy > 0) {
+    const sky = ctx.createLinearGradient(0, 0, 0, hy);
+    sky.addColorStop(0, dk(col.skyTop));
+    sky.addColorStop(1, dk(col.skyBot));
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, hy);
+  }
+  if (hy < h) {
+    const gnd = ctx.createLinearGradient(0, hy, 0, h);
+    gnd.addColorStop(0, dk(col.grTop));
+    gnd.addColorStop(1, dk(col.grBot));
+    ctx.fillStyle = gnd;
+    ctx.fillRect(0, hy, w, h - hy);
+  }
+}
+
 export function renderScene(ctx, state, now = 0) {
   const { w, h } = DESIGN;
   const time = now / 1000;

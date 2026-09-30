@@ -1,9 +1,9 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
-import { DESIGN, MAX_DPR } from './config.js';
+import { DESIGN, HORIZON, MAX_DPR } from './config.js';
 import { plotAt, setBottomReserve } from './state.js';
 import { plantSeed, unlockPlot, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
-import { renderScene } from './render.js';
+import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
@@ -11,11 +11,16 @@ import { initBoot } from './boot.js';
 import { createCelebration } from './celebrate.js';
 
 const canvas = document.getElementById('game');
+const bgCanvas = document.getElementById('bg');
 const debugEl = document.getElementById('debug');
 const hudEl = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
+const bgCtx = bgCanvas.getContext('2d');
 
-const view = { cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l: 0 } };
+const view = {
+  cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l: 0 },
+  winW: 0, winH: 0, horizonY: 0, // full-window backdrop geometry
+};
 let showDebug = false;
 
 // Restore the save (with offline progress applied) or start fresh.
@@ -76,6 +81,17 @@ function layout() {
     const reserveCss = rect.bottom - typesEl.getBoundingClientRect().top;
     setBottomReserve(reserveCss / view.scale + 10); // +gap
   }
+
+  // Full-window backdrop canvas, with the horizon aligned to the play field.
+  const winW = innerWidth, winH = innerHeight;
+  view.winW = winW;
+  view.winH = winH;
+  view.horizonY = rect.top + HORIZON * view.scale;
+  bgCanvas.style.width = winW + 'px';
+  bgCanvas.style.height = winH + 'px';
+  bgCanvas.width = Math.round(winW * dpr);
+  bgCanvas.height = Math.round(winH * dpr);
+  bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 // Map a pointer event (client px) to design-unit coordinates, or null if outside.
@@ -116,6 +132,7 @@ function frame(now) {
       acc -= STEP;
     }
   }
+  renderBackdrop(bgCtx, state, view.winW, view.winH, view.horizonY);
   renderScene(ctx, state, now);
   hud.update(state);
   // A new milestone pauses the game and raises the celebration.

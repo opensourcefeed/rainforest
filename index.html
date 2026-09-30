@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="src/style.css" />
 </head>
 <body>
+  <!-- Full-window backdrop: the stage scenery extended edge-to-edge behind the
+       play field, so wide/landscape screens aren't letterboxed with black. -->
+  <canvas id="bg"></canvas>
   <!-- The play field is fit-scaled inside here; HUD anchors to the safe area. -->
   <div id="stage">
     <canvas id="game"></canvas>

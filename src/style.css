@@ -21,18 +21,30 @@ html, body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Full-window backdrop canvas (sized in JS), behind everything. */
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+}
+
 #stage {
   position: fixed;
   inset: 0;
+  z-index: 1;
   display: grid;
   place-items: center;
 }
 
-/* Canvas is sized in JS (DPR-aware). CSS just keeps it from overflowing. */
+/* Canvas is sized in JS (DPR-aware). CSS just keeps it from overflowing. The
+   shadow is a soft vignette that separates the play field from the backdrop on
+   wide/landscape screens (off-screen and invisible on a full-bleed phone). */
 #game {
   display: block;
   max-width: 100%;
   max-height: 100%;
+  box-shadow: 0 0 90px 12px rgba(0, 0, 0, 0.45);
 }
 
 /* HUD is pinned to the play field in JS (layout()) so it hugs the game on wide
