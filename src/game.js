@@ -334,6 +334,50 @@ export function plantSeed(state, index) {
   return true;
 }
 
+// --- Tile actions: what a tap on a tile would do --------------------------
+const tierOf = (id) => PLANT_TYPES.findIndex((t) => t.id === id);
+
+// 'unlock' | 'plant' | 'upgrade' | null (null = nothing to do, don't walk there).
+export function tileAction(state, index) {
+  const plot = state.plots[index];
+  if (!plot) return null;
+  if (!plot.unlocked) return 'unlock';
+  if (!plot.planted) return 'plant';
+  const p = plot.plant;
+  if (p && p.status === 'alive' && tierOf(selectedType(state).id) > tierOf(p.typeId)) return 'upgrade';
+  return null;
+}
+
+// Replace an established plant with the selected, higher tier. Transplanted into
+// already-healthy ground, so it doesn't re-roll survival — you never lose the
+// old plant for nothing.
+export function upgradePlant(state, index) {
+  const plot = state.plots[index];
+  const p = plot && plot.plant;
+  if (!p || p.status !== 'alive') return false;
+  const type = selectedType(state);
+  if (tierOf(type.id) <= tierOf(p.typeId)) return false;
+  const cost = plantCost(state, type);
+  if (state.water < cost) {
+    pushFx(state, plot.col, plot.row, 'need', `${cost}💧`);
+    return false;
+  }
+  state.water -= cost;
+  plot.plant = { status: 'alive', age: 0, growth: 0.15, typeId: type.id };
+  if (state.stats) state.stats.planted++;
+  pushFx(state, plot.col, plot.row, 'survive');
+  return true;
+}
+
+// Perform whatever a tap on this tile means. Returns the action done, or null.
+export function actOnTile(state, index) {
+  const a = tileAction(state, index);
+  if (a === 'unlock') return unlockPlot(state, index) ? a : null;
+  if (a === 'plant') return plantSeed(state, index) ? a : null;
+  if (a === 'upgrade') return upgradePlant(state, index) ? a : null;
+  return null;
+}
+
 // Advance every plant and let the living ones enrich the environment.
 export function updateWorld(state, dt) {
   const m = state.meters;

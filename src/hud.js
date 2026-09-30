@@ -55,7 +55,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   // Persistent one-line reminder of the core action.
   const hint = document.createElement('div');
   hint.className = 'hud-hint';
-  hint.textContent = 'Tap empty soil to plant · tap locked desert to expand';
+  hint.textContent = 'Tap soil to plant · desert to expand · a plant to upgrade it';
 
   const actions = document.createElement('div');
   actions.className = 'hud-actions';

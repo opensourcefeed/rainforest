@@ -3,7 +3,7 @@
 import { MAX_DPR, CONTROL_BAND, GRID } from './config.js';
 import { plotAt, tileCenter } from './state.js';
 import { computeLayout, L } from './layout.js';
-import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount, initQuests, doPrestige } from './game.js';
+import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, doPrestige } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
@@ -133,8 +133,9 @@ function moveMan(dt) {
     const step = 640 * L.unit * dt; // quick
     if (dist <= step + 4) {
       man.x = tx; man.y = ty;
-      if (!plot.unlocked) { if (unlockPlot(state, idx)) sfx.unlock(); }
-      else if (plantSeed(state, idx)) sfx.plant();
+      const done = actOnTile(state, idx);
+      if (done === 'unlock') sfx.unlock();
+      else if (done) sfx.plant();
       man.lastIdx = idx;
       man.queue.shift();
     } else {
@@ -221,7 +222,8 @@ addEventListener('pointerdown', (e) => {
   const plotIndex = plotAt(state, p.x, p.y);
   if (plotIndex === -1) return;
   // Queue the tile; the man walks there and acts on arrival (see moveMan).
-  if (man.queue.length < 8) man.queue.push(plotIndex);
+  // Only walk if the tap would do something (unlock / plant / upgrade).
+  if (tileAction(state, plotIndex) && man.queue.length < 8) man.queue.push(plotIndex);
 });
 
 // Web Audio must start from a user gesture.
