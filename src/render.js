@@ -178,6 +178,60 @@ function drawFigure(ctx, x, feetY, s = 1, facing = 1) {
 
 // Full-window backdrop: all decorative scenery — sky, sun, ground, grass,
 // wildlife, clouds, rain — across the whole viewport (screen px, from L).
+// The water source, evolving with the environment: a carried jug in the barren
+// desert, then a puddle → pond → stream → a full river as the land greens.
+// Drawn in the backdrop (behind the platform) and animated (shimmer + current).
+function drawJug(ctx, x, y, u) {
+  const s = 11 * u;
+  ctx.fillStyle = '#8b9aa4';
+  roundRect(ctx, x - s * 0.5, y - s * 0.9, s, s * 1.25, s * 0.32); ctx.fill();
+  ctx.fillStyle = '#4aa3e0'; // water inside
+  roundRect(ctx, x - s * 0.36, y - s * 0.3, s * 0.72, s * 0.55, s * 0.18); ctx.fill();
+  ctx.fillStyle = '#6b7c86'; // neck + cap
+  ctx.fillRect(x - s * 0.17, y - s * 1.28, s * 0.34, s * 0.42);
+}
+
+function drawWater(ctx, w, horizonY, h, avg, time) {
+  const gb = h - horizonY;
+  const y = horizonY + gb * 0.15; // distant water line, behind the platform
+  const u = L.unit;
+
+  if (avg < 0.12) { drawJug(ctx, w * 0.18, y + gb * 0.02, u); return; }
+
+  const t = Math.min(1, (avg - 0.12) / 0.73);   // puddle (0) → river (1)
+  const width = (0.13 + 0.97 * t) * w;
+  const hgt = (0.035 + 0.11 * t) * gb;
+  const cx = (0.24 + 0.26 * t) * w;              // off to the side → centred
+  const left = cx - width / 2;
+
+  const grad = ctx.createLinearGradient(0, y - hgt, 0, y + hgt);
+  grad.addColorStop(0, '#74bdea');
+  grad.addColorStop(1, '#2d6cad');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.ellipse(cx, y, width / 2, hgt, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 1.5 * u;
+  ctx.strokeStyle = 'rgba(205, 238, 255, 0.5)';
+  ctx.stroke();
+
+  // Shimmer / current — more and faster as it grows into a flowing river.
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, y, width / 2, hgt, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = 'rgba(207, 238, 255, 0.5)';
+  const n = 3 + ((t * 5) | 0);
+  for (let i = 0; i < n; i++) {
+    const sx = left + ((i * 113 + time * (18 + 42 * t)) % width);
+    const sy = y + Math.sin(i * 1.7 + time * 1.4) * hgt * 0.5;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, width * 0.05, hgt * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 // Offscreen cache of the backdrop's static layer (sky, ground, grass). It only
 // changes as the land greens, so it's rebuilt when the environment average moves
 // by a visible step (or on resize) — not every frame. Big win on cheap phones.
@@ -222,6 +276,7 @@ export function renderBackdrop(ctx, state, now = 0) {
 
   ctx.clearRect(0, 0, w, h);
   ctx.drawImage(staticBackdrop(avg), 0, 0, w, h);
+  drawWater(ctx, w, hy, h, avg, time);
 
   const rainI = (state.rain && state.rain.intensity) || 0;
   drawSun(ctx, w * 0.74, hy * 0.42, avg, time, 1 - 0.72 * rainI);

@@ -269,7 +269,7 @@ hud.update(state); // build the selector so the first layout can measure it
 layout();
 requestAnimationFrame(frame); // game renders behind the overlays immediately
 // Loading animation (~2.5s), then the first-run story (once) or straight to play.
-showLoader(2500, () => {
+showLoader(1500, () => {
   const day = (t) => new Date(t).toLocaleDateString('en-CA'); // local YYYY-MM-DD
   const today = day(Date.now()), yesterday = day(Date.now() - 86400000);
   // First run: the story (streak starts today, no gift on top of it).
