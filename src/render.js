@@ -234,25 +234,13 @@ export function renderScene(ctx, state, now = 0) {
   // Vegetation creeping across the ground as the land heals.
   drawTufts(ctx, avg);
 
-  // Wildlife returns as the land recovers (fades in past each threshold).
-  drawCritters(ctx, avg, time);
+  // Flying wildlife lives in the sky (drawn behind the platform).
+  drawCritters(ctx, avg, time, 'air');
 
   // Planting plots — isometric soil blocks, drawn back-to-front so nearer tiles
   // and taller plants overlap farther ones correctly. Tops green with progress.
   const { tw, th } = ISO;
-  const depth = 10;
-
-  // Soft drop shadow that grounds the whole platform to the terrain.
-  const left = tileCenter(0, GRID.rows - 1).x - tw;
-  const right = tileCenter(GRID.cols - 1, 0).x + tw;
-  const shadowY = tileCenter(GRID.cols - 1, GRID.rows - 1).y + th + depth - 2;
-  ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.fillStyle = '#08160a';
-  ctx.beginPath();
-  ctx.ellipse((left + right) / 2, shadowY, (right - left) / 2 * 0.98, th * 1.7, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+  const depth = 6; // shallow raise so the field reads as terrain, not a floating slab
 
   const soil = [150, 112, 64], grass = [96, 150, 70];
   const top = lerpArr(soil, grass, Math.min(1, avg * 1.1));
@@ -288,6 +276,9 @@ export function renderScene(ctx, state, now = 0) {
   // The lone man in the foreground, standing at the near-left of his field.
   const fl = tileCenter(0, GRID.rows - 1);
   drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3);
+
+  // Ground wildlife stands in front of the platform (drawn over it).
+  drawCritters(ctx, avg, time, 'ground');
 
   // Transient feedback effects, on top of the plants.
   drawFx(ctx, state);
@@ -338,29 +329,31 @@ function drawClouds(ctx, w, time) {
 }
 
 // Wildlife that returns as milestones are passed — a living, animated reward.
+// `layer` is 'air' (flyers, behind the platform) or 'ground' (walkers, in front).
 const CRITTERS = [
-  { emoji: '🦋', at: 0.42, x: 0.24, y: 0.42, motion: 'flutter', phase: 0.0, speed: 0 },
-  { emoji: '🐦', at: 0.5, x: 0.68, y: 0.30, motion: 'fly', phase: 1.1, speed: 26 },
-  { emoji: '🦋', at: 0.6, x: 0.8, y: 0.5, motion: 'flutter', phase: 2.3, speed: 0 },
-  { emoji: '🦌', at: 0.72, x: 0.34, y: 0.59, motion: 'bob', phase: 0.7, speed: 0 },
-  { emoji: '🐒', at: 0.88, x: 0.6, y: 0.5, motion: 'bob', phase: 1.8, speed: 0 },
+  { emoji: '🦋', at: 0.42, x: 0.24, y: 0.40, motion: 'flutter', layer: 'air', phase: 0.0, speed: 0 },
+  { emoji: '🐦', at: 0.5, x: 0.68, y: 0.28, motion: 'fly', layer: 'air', phase: 1.1, speed: 26 },
+  { emoji: '🦋', at: 0.6, x: 0.8, y: 0.46, motion: 'flutter', layer: 'air', phase: 2.3, speed: 0 },
+  { emoji: '🦌', at: 0.72, x: 0.24, y: 0.80, motion: 'bob', layer: 'ground', phase: 0.7, speed: 0 },
+  { emoji: '🐒', at: 0.88, x: 0.76, y: 0.79, motion: 'bob', layer: 'ground', phase: 1.8, speed: 0 },
 ];
-function drawCritters(ctx, avg, time) {
+function drawCritters(ctx, avg, time, layer) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '18px system-ui, sans-serif';
   for (const c of CRITTERS) {
-    if (avg <= c.at) continue;
+    if (c.layer !== layer || avg <= c.at) continue;
     let x = DESIGN.w * c.x;
     let y = DESIGN.h * c.y;
     if (c.motion === 'flutter') {
-      x += Math.sin(time * 3 + c.phase) * 11;
-      y += Math.sin(time * 5 + c.phase) * 7;
+      // Organic butterfly path: slow wander + quick erratic flutter.
+      x += Math.sin(time * 0.5 + c.phase) * 28 + Math.sin(time * 0.23 + c.phase * 2) * 13;
+      y += Math.sin(time * 0.7 + c.phase) * 16 + Math.sin(time * 7 + c.phase) * 4;
     } else if (c.motion === 'fly') {
       x = ((DESIGN.w * c.x + time * c.speed) % (DESIGN.w + 40)) - 20; // drift + wrap
       y += Math.sin(time * 2 + c.phase) * 6;
     } else {
-      y += Math.sin(time * 1.6 + c.phase) * 3; // gentle bob
+      y += Math.sin(time * 1.6 + c.phase) * 2.5; // gentle bob, feet on the ground
     }
     ctx.globalAlpha = Math.min(1, (avg - c.at) / 0.08);
     ctx.fillText(c.emoji, x, y);
