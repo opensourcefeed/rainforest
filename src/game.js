@@ -417,7 +417,6 @@ export function survivalAt(state, plot) {
 // --- Harvest & care --------------------------------------------------------
 const FRUIT_TIME = 35;     // seconds for a grown fruiting plant to ripen a fruit
 const THIRST_RATE = 0.004; // chance/s a grown plant gets thirsty (dry weather)
-export const FRUIT_EMOJI = { cactus: '🌺', shrub: '🍒', tree: '🍎', canopy: '🥭' };
 
 // Water a ripe fruit is worth: scales with the plant's tier, legacy, mixed grove.
 export function harvestValue(state, plot) {

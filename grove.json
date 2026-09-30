@@ -1,4 +1,19 @@
 {
-  "updated": null,
-  "trees": []
+  "updated": "2026-09-30",
+  "trees": [
+    {
+      "species": "Mango (Mangifera indica)",
+      "planted": "",
+      "location": "Malappuram, India",
+      "photo": "grove/mango.webp",
+      "note": "e.g. 'Healthy, 0.8 m tall'"
+    },
+    {
+      "species": "Rose (Rosa)",
+      "planted": "",
+      "location": "Malappuram, India",
+      "photo": "grove/rose.webp",
+      "note": "e.g. 'Flowering'"
+    }
+  ]
 }

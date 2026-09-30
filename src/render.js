@@ -3,7 +3,7 @@
 import { GRID } from './config.js';
 import { tileCenter, plantHeight } from './state.js';
 import { L } from './layout.js';
-import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus, FRUIT_EMOJI } from './game.js';
+import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -283,14 +283,19 @@ export function renderScene(ctx, state, now = 0, man = null) {
     const bonus = tileBonus(state, p);
     if (p.plant) {
       drawPlant(ctx, c.x, c.y, p.plant);
-      // Tap targets above the plant: a ripe fruit, or a 💧 when it's thirsty.
-      const icon = p.plant.thirsty ? '💧' : (p.plant.ripe ? FRUIT_EMOJI[p.plant.typeId] : null);
-      if (icon) {
+      // Tap target above the plant: a 💧 when it's thirsty, else a gold coin
+      // when it's ready to harvest (a collectible token, not a fruit).
+      if (p.plant.status === 'alive' && (p.plant.thirsty || p.plant.ripe)) {
         const bob = Math.sin(time * 3 + p.col + p.row) * 2.5 * unit;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${Math.round(16 * unit)}px system-ui, sans-serif`;
-        ctx.fillText(icon, c.x, c.y - plantHeight(p.plant) - 8 * unit + bob);
+        const iy = c.y - plantHeight(p.plant) - 8 * unit + bob;
+        if (p.plant.thirsty) {
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = `${Math.round(16 * unit)}px system-ui, sans-serif`;
+          ctx.fillText('💧', c.x, iy);
+        } else {
+          drawCoin(ctx, c.x, iy, (5.5 + 0.7 * Math.sin(time * 5 + p.col)) * unit);
+        }
       }
       // Mixed grove (3+ species around it): a small gold marker on the tile.
       if (bonus.mixed && p.plant.status === 'alive') {
@@ -534,6 +539,20 @@ function drawFx(ctx, state) {
     }
   }
   ctx.globalAlpha = 1;
+}
+
+// A small gold coin — the "ready to harvest" token above a grown plant.
+function drawCoin(ctx, x, y, r) {
+  const glow = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 2);
+  glow.addColorStop(0, 'rgba(246, 207, 79, 0.45)');
+  glow.addColorStop(1, 'rgba(246, 207, 79, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(x, y, r * 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#f6cf4f'; ctx.fill();
+  ctx.lineWidth = 1.4; ctx.strokeStyle = '#c1961d'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.32, r * 0.32, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.fill();
 }
 
 // Darken a #rrggbb color by factor f -> css string (for rims/trunks).
