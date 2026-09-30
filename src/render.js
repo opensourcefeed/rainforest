@@ -229,8 +229,10 @@ export function renderScene(ctx, state, now = 0) {
   const { tw, th } = ISO;
   const depth = 6; // shallow raise so the field reads as terrain, not a floating slab
 
-  const soil = [150, 112, 64], grass = [96, 150, 70];
-  const top = lerpArr(soil, grass, Math.min(1, avg * 1.1));
+  // Tile top derives from the SAME scene ground palette as the backdrop, lifted
+  // slightly, so the platform reads as cultivated soil of the same land at every
+  // stage instead of a differently-coloured slab.
+  const top = sceneColors(avg).grTop.map((v) => Math.min(255, v + 16));
   const shade = (c, k) => `rgb(${(c[0] * k) | 0},${(c[1] * k) | 0},${(c[2] * k) | 0})`;
   const nextUnlock = unlockCost(state);
   const ordered = [...state.plots].sort((a, b) => (a.col + a.row) - (b.col + b.row));
