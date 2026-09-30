@@ -1,6 +1,6 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
-import { DESIGN, HORIZON, CONTROL_BAND, ISO, GRID } from './config.js';
+import { DESIGN, ISO, GRID } from './config.js';
 import { tileCenter, getBottomReserve, plantHeight } from './state.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
@@ -38,7 +38,6 @@ function tileBlock(ctx, cx, cy, tw, th, depth, topC, leftC, rightC) {
 }
 
 const lerpArr = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-const rgb = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
 
 // Scene palette per stage (aligned to STAGES): sky and ground gradients that
 // carry the world from bare desert to lush rainforest.
@@ -66,45 +65,61 @@ function sceneColors(avg) {
   };
 }
 
-// Deterministic scatter of ground vegetation that fades in as the land greens,
-// so the world visibly changes (not just a color tint). Computed once with a
-// tiny seeded RNG so tufts never flicker or move between frames.
+// A soft filled clump of grass blades at (x,y).
+function grassClump(ctx, x, y, s, hue, alpha) {
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = `hsl(${hue},45%,38%)`;
+  for (const dx of [-3, 0, 3]) {
+    const h = s * (dx === 0 ? 1 : 0.8);
+    ctx.beginPath();
+    ctx.moveTo(x + dx - 1.4, y);
+    ctx.quadraticCurveTo(x + dx + dx * 0.5, y - h * 0.7, x + dx * 1.5, y - h);
+    ctx.quadraticCurveTo(x + dx + dx * 0.5, y - h * 0.7, x + dx + 1.4, y);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Deterministic scatter of ground vegetation as window-relative fractions, so it
+// fills the whole backdrop at any size. Sorted far-first so nearer clumps overlap.
 const TUFTS = (() => {
   let seed = 1337;
   const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-  const bandTop = DESIGN.h - CONTROL_BAND;
   const out = [];
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 170; i++) {
     out.push({
-      x: rnd() * DESIGN.w,
-      y: HORIZON + 6 + rnd() * (bandTop - HORIZON - 6),
-      s: 5 + rnd() * 5,
+      fx: rnd(),                 // 0..1 across the window width
+      fy: rnd(),                 // 0..1 down the ground band (horizon..bottom)
+      s: 5 + rnd() * 6,
       hue: 96 + rnd() * 24,
-      threshold: rnd() * 0.8, // this tuft appears once the land greens past here
+      threshold: rnd() * 0.8,    // appears once the land greens past here
     });
   }
-  // Draw far tufts (higher on screen) first so nearer ones overlap them.
-  return out.sort((a, b) => a.y - b.y);
+  return out.sort((a, b) => a.fy - b.fy);
 })();
 
-function drawTufts(ctx, g) {
+// Draw the grass across the full window (ground band = horizonY..h).
+function drawTufts(ctx, w, horizonY, h, g) {
+  const gb = h - horizonY;
   for (const t of TUFTS) {
     if (g <= t.threshold) continue;
-    // Fade each tuft in over the next slice of greening after its threshold.
     const a = Math.min(1, (g - t.threshold) / 0.15);
-    ctx.globalAlpha = a * 0.85;
-    // A soft filled clump of blades reads as grass rather than a stray speck.
-    ctx.fillStyle = `hsl(${t.hue},45%,38%)`;
-    const scale = 0.6 + 0.4 * a;
-    for (const dx of [-3, 0, 3]) {
-      const h = t.s * scale * (dx === 0 ? 1 : 0.8);
-      ctx.beginPath();
-      ctx.moveTo(t.x + dx - 1.4, t.y);
-      ctx.quadraticCurveTo(t.x + dx + dx * 0.5, t.y - h * 0.7, t.x + dx * 1.5, t.y - h);
-      ctx.quadraticCurveTo(t.x + dx + dx * 0.5, t.y - h * 0.7, t.x + dx + 1.4, t.y);
-      ctx.fill();
-    }
+    grassClump(ctx, t.fx * w, horizonY + t.fy * gb, t.s * (0.6 + 0.4 * a), t.hue, a * 0.85);
   }
+}
+
+// The sun, with halo and gentle pulse, at (sx,sy).
+function drawSun(ctx, sx, sy, avg, time) {
+  const sunA = 1 - 0.6 * avg;
+  const rCore = 42 * (1 + 0.05 * Math.sin(time * 1.4));
+  const halo = ctx.createRadialGradient(sx, sy, rCore * 0.5, sx, sy, rCore * 2.1);
+  halo.addColorStop(0, `rgba(255,244,214,${0.5 * sunA})`);
+  halo.addColorStop(1, 'rgba(255,244,214,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(sx, sy, rCore * 2.1, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = sunA;
+  ctx.fillStyle = '#fff4d6';
+  ctx.beginPath(); ctx.arc(sx, sy, rCore, 0, Math.PI * 2); ctx.fill();
   ctx.globalAlpha = 1;
 }
 
@@ -183,11 +198,20 @@ export function renderBackdrop(ctx, state, w, h, horizonY, fieldBottom = h, now 
   ctx.fillStyle = gnd;
   ctx.fillRect(0, hy, w, h - hy);
 
-  // Rain across the extended scene too, so the storm is continuous.
+  const avg = avgMeter(state);
+  const time = now / 1000;
+
+  // Sun, grass and wildlife spread across the whole scene.
+  drawSun(ctx, w * 0.74, hy * 0.42, avg, time);
+  drawTufts(ctx, w, hy, h, avg);
+  drawCritters(ctx, w, hy, h, avg, time);
+
+  // Rain over the whole scene.
   if (state.rain && state.rain.active) {
     ctx.fillStyle = 'rgba(40, 55, 70, 0.14)';
     ctx.fillRect(0, 0, w, h);
-    drawRain(ctx, w, h, now / 1000);
+    drawClouds(ctx, w, time);
+    drawRain(ctx, w, h, time);
   }
 }
 
@@ -195,47 +219,10 @@ export function renderScene(ctx, state, now = 0) {
   const { w, h } = DESIGN;
   const time = now / 1000;
   const avg = avgMeter(state); // 0 desert .. 1 rainforest
-  const col = sceneColors(avg);
 
-  // Sky
-  const sky = ctx.createLinearGradient(0, 0, 0, HORIZON);
-  sky.addColorStop(0, rgb(col.skyTop));
-  sky.addColorStop(1, rgb(col.skyBot));
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, w, HORIZON);
-
-  // Sun — bright over the desert, dimming as the canopy/humidity build, with a
-  // gentle breathing pulse and a soft halo.
-  const sunX = w * 0.74, sunY = h * 0.16;
-  const sunA = 1 - 0.6 * avg;
-  const pulse = 1 + 0.05 * Math.sin(time * 1.4);
-  const rCore = 42 * pulse;
-  const halo = ctx.createRadialGradient(sunX, sunY, rCore * 0.5, sunX, sunY, rCore * 2.1);
-  halo.addColorStop(0, `rgba(255,244,214,${0.5 * sunA})`);
-  halo.addColorStop(1, 'rgba(255,244,214,0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath();
-  ctx.arc(sunX, sunY, rCore * 2.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = sunA;
-  ctx.fillStyle = '#fff4d6';
-  ctx.beginPath();
-  ctx.arc(sunX, sunY, rCore, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  // Ground
-  const sand = ctx.createLinearGradient(0, HORIZON, 0, h);
-  sand.addColorStop(0, rgb(col.grTop));
-  sand.addColorStop(1, rgb(col.grBot));
-  ctx.fillStyle = sand;
-  ctx.fillRect(0, HORIZON, w, h - HORIZON);
-
-  // Vegetation creeping across the ground as the land heals.
-  drawTufts(ctx, avg);
-
-  // Flying wildlife lives in the sky (drawn behind the platform).
-  drawCritters(ctx, avg, time, 'air');
+  // Transparent play field — the full-window backdrop shows through. Only the
+  // interactive isometric grid, its plants, the man and feedback live here.
+  ctx.clearRect(0, 0, w, h);
 
   // Planting plots — isometric soil blocks, drawn back-to-front so nearer tiles
   // and taller plants overlap farther ones correctly. Tops green with progress.
@@ -277,17 +264,11 @@ export function renderScene(ctx, state, now = 0) {
   const fl = tileCenter(0, GRID.rows - 1);
   drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3);
 
-  // Ground wildlife stands in front of the platform (drawn over it).
-  drawCritters(ctx, avg, time, 'ground');
-
   // Transient feedback effects, on top of the plants.
   drawFx(ctx, state);
 
-  // Rain event — clouds, streaks and a mood darken over the whole scene.
+  // Rain streaks over the platform (the backdrop rains on the wider scene).
   if (state.rain && state.rain.active) {
-    ctx.fillStyle = 'rgba(40, 55, 70, 0.14)';
-    ctx.fillRect(0, 0, w, h);
-    drawClouds(ctx, w, time);
     drawRain(ctx, w, h, time);
   }
 
@@ -328,35 +309,41 @@ function drawClouds(ctx, w, time) {
   }
 }
 
-// Wildlife that returns as milestones are passed — a living, animated reward.
-// `layer` is 'air' (flyers, behind the platform) or 'ground' (walkers, in front).
+// Wildlife that returns as milestones are passed — a living, animated reward,
+// spread across the whole window. `sky` (fraction of the sky band) marks flyers;
+// `ground` (fraction of the ground band) marks walkers.
 const CRITTERS = [
-  { emoji: '🦋', at: 0.42, x: 0.24, y: 0.40, motion: 'flutter', layer: 'air', phase: 0.0, speed: 0 },
-  { emoji: '🐦', at: 0.5, x: 0.68, y: 0.28, motion: 'fly', layer: 'air', phase: 1.1, speed: 26 },
-  { emoji: '🦋', at: 0.6, x: 0.8, y: 0.46, motion: 'flutter', layer: 'air', phase: 2.3, speed: 0 },
-  { emoji: '🦌', at: 0.72, x: 0.24, y: 0.80, motion: 'bob', layer: 'ground', phase: 0.7, speed: 0 },
-  { emoji: '🐒', at: 0.88, x: 0.76, y: 0.79, motion: 'bob', layer: 'ground', phase: 1.8, speed: 0 },
+  { e: '🦋', at: 0.42, fx: 0.12, sky: 0.58, m: 'flutter', ph: 0.0 },
+  { e: '🦋', at: 0.44, fx: 0.5, sky: 0.42, m: 'flutter', ph: 1.5 },
+  { e: '🦋', at: 0.55, fx: 0.86, sky: 0.5, m: 'flutter', ph: 2.3 },
+  { e: '🦋', at: 0.62, fx: 0.32, sky: 0.66, m: 'flutter', ph: 3.1 },
+  { e: '🐦', at: 0.5, fx: 0.3, sky: 0.3, m: 'fly', ph: 1.1, sp: 24 },
+  { e: '🐦', at: 0.6, fx: 0.7, sky: 0.2, m: 'fly', ph: 0.4, sp: 34 },
+  { e: '🦌', at: 0.72, fx: 0.14, ground: 0.5, m: 'bob', ph: 0.7 },
+  { e: '🦌', at: 0.76, fx: 0.82, ground: 0.66, m: 'bob', ph: 1.2 },
+  { e: '🐒', at: 0.88, fx: 0.55, ground: 0.38, m: 'bob', ph: 1.8 },
+  { e: '🐒', at: 0.9, fx: 0.9, ground: 0.5, m: 'bob', ph: 2.6 },
 ];
-function drawCritters(ctx, avg, time, layer) {
+function drawCritters(ctx, w, horizonY, h, avg, time) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '18px system-ui, sans-serif';
+  const gb = h - horizonY;
   for (const c of CRITTERS) {
-    if (c.layer !== layer || avg <= c.at) continue;
-    let x = DESIGN.w * c.x;
-    let y = DESIGN.h * c.y;
-    if (c.motion === 'flutter') {
-      // Organic butterfly path: slow wander + quick erratic flutter.
-      x += Math.sin(time * 0.5 + c.phase) * 28 + Math.sin(time * 0.23 + c.phase * 2) * 13;
-      y += Math.sin(time * 0.7 + c.phase) * 16 + Math.sin(time * 7 + c.phase) * 4;
-    } else if (c.motion === 'fly') {
-      x = ((DESIGN.w * c.x + time * c.speed) % (DESIGN.w + 40)) - 20; // drift + wrap
-      y += Math.sin(time * 2 + c.phase) * 6;
+    if (avg <= c.at) continue;
+    let x = c.fx * w;
+    let y = c.sky != null ? c.sky * horizonY : horizonY + c.ground * gb;
+    if (c.m === 'flutter') {
+      x += Math.sin(time * 0.5 + c.ph) * 30 + Math.sin(time * 0.23 + c.ph * 2) * 14;
+      y += Math.sin(time * 0.7 + c.ph) * 16 + Math.sin(time * 7 + c.ph) * 4;
+    } else if (c.m === 'fly') {
+      x = ((c.fx * w + time * c.sp) % (w + 40)) - 20; // drift + wrap
+      y += Math.sin(time * 2 + c.ph) * 6;
     } else {
-      y += Math.sin(time * 1.6 + c.phase) * 2.5; // gentle bob, feet on the ground
+      y += Math.sin(time * 1.6 + c.ph) * 2.5; // gentle bob
     }
     ctx.globalAlpha = Math.min(1, (avg - c.at) / 0.08);
-    ctx.fillText(c.emoji, x, y);
+    ctx.fillText(c.e, x, y);
   }
   ctx.globalAlpha = 1;
 }
