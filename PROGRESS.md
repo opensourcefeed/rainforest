@@ -100,6 +100,18 @@ Turning the beat-in-2-minutes prototype into a real economy loop.
       pouring ~4💧/s — the renewable-water turning point. Animated rain + clouds in scene and
       backdrop; HUD rain badge.
 
+### Isometric conversion
+- [x] **S30 — Iso tile grid.** Diamond-tile projection (isoOrigin/tileCenter + inverse-
+      transform hit-testing); depth-sorted rendering; plants as billboards on tiles; fx and
+      locked prices re-anchored. Removed canvas box-shadow.
+- [x] **S31 — Raised soil blocks.** Tiles render as 3D blocks (side faces + top) that green
+      with progress.
+- [ ] S32 — Scene recomposition for iso (man/sun/tufts/critters placement), if needed after
+      playtest.
+
+Decision: staying vanilla Canvas 2D for iso (no framework) — reassess at the Vite/Capacitor
+migration; PixiJS would be the natural upgrade then if richer 2D is wanted.
+
 Next in Phase 1: ambient sound, real art, then migrate to Vite for Capacitor.
 
 ## Phase 0 status
