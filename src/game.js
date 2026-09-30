@@ -218,10 +218,12 @@ export function updateWorld(state, dt) {
       p.growth = Math.min(1, p.growth + dt / type.growTime);
       // Young plants contribute a little, mature plants the full amount; higher
       // tiers heal the land faster.
+      // Diminishing returns: greening already-lush land is much harder, so
+      // early recovery is fast (the hook) and late stages take real work.
       const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul;
-      m.soil = Math.min(1, m.soil + g);
-      m.shade = Math.min(1, m.shade + g);
-      m.humidity = Math.min(1, m.humidity + g);
+      m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 2);
+      m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 2);
+      m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 2);
       // Grove water yield — grows with the plant, humidity, and tier.
       state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul;
     }

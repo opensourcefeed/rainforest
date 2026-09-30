@@ -35,13 +35,11 @@ html, body {
   max-height: 100%;
 }
 
-/* HUD anchors to the safe area, on top of the play field. */
+/* HUD is pinned to the play field in JS (layout()) so it hugs the game on wide
+   screens; inset:0 is just the pre-layout fallback. */
 #hud {
   position: fixed;
-  top: var(--safe-t);
-  right: var(--safe-r);
-  bottom: var(--safe-b);
-  left: var(--safe-l);
+  inset: 0;
   pointer-events: none;            /* children opt back in */
 }
 

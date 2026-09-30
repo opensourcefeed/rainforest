@@ -11,6 +11,7 @@ import { initBoot } from './boot.js';
 
 const canvas = document.getElementById('game');
 const debugEl = document.getElementById('debug');
+const hudEl = document.getElementById('hud');
 const ctx = canvas.getContext('2d');
 
 const view = { cssW: 0, cssH: 0, dpr: 1, scale: 1, insets: { t: 0, r: 0, b: 0, l: 0 } };
@@ -53,6 +54,16 @@ function layout() {
 
   const s = view.scale * dpr;
   ctx.setTransform(s, 0, 0, s, 0, 0);
+
+  // Pin the HUD to the play field so it hugs the game on wide/letterboxed
+  // screens instead of floating out in the margins.
+  const rect = canvas.getBoundingClientRect();
+  hudEl.style.left = rect.left + 'px';
+  hudEl.style.top = rect.top + 'px';
+  hudEl.style.width = rect.width + 'px';
+  hudEl.style.height = rect.height + 'px';
+  hudEl.style.right = 'auto';
+  hudEl.style.bottom = 'auto';
 }
 
 // Map a pointer event (client px) to design-unit coordinates, or null if outside.

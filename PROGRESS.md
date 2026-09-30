@@ -66,6 +66,24 @@ water was unexplained, and the Collect-water button overlapped the grid. Fixes:
       heals; stronger green color shift; meter gain nudged 0.0006→0.0008, greening divisor
       0.45→0.4.
 
+## Phase 1 (in progress) — land expansion + full loop
+Turning the beat-in-2-minutes prototype into a real economy loop.
+- [x] **S17 — Land expansion.** Plots start locked; buy them with water at a rising cost.
+      First real water sink.
+- [x] **S18 — Grove water yield.** Mature plants yield water as humidity rises (idle economy);
+      HUD shows +/s income.
+- [x] **S19 — Five stages.** Barren→Scrubland→Grassland→Dry woodland→Rainforest, with a
+      per-stage scene palette, dimming sun, and vegetation across the whole range.
+- [x] **S20 — Plant tiers.** Five plant types unlocked per stage (Seed→Cactus→Shrub→Tree→
+      Canopy); higher tiers cost more, heal faster, yield more. HUD type selector.
+- [x] **S21 — Milestone rewards + wildlife.** Stage-up water bonus + banner; stage-gated
+      critters fade in.
+- [x] **S22 — Balance + desktop HUD fix.** Diminishing returns (squared) so early is fast and
+      late stages take work: optimal-play pacing Scrubland ~1.2m → Rainforest ~6.5m. HUD now
+      pinned to the play field on wide/letterboxed screens.
+
+Next in Phase 1: rain events, ambient sound, real art, then migrate to Vite for Capacitor.
+
 ## Phase 0 status
 Core loop + legibility pass done — a playable, readable stages 1–2 prototype. Next:
 real-device playtest to answer "is the early struggle fun?", then Phase 1 (remaining stages,
