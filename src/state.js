@@ -1,7 +1,7 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
 import { DESIGN, HORIZON, GRID, ISO, CONTROL_BAND, STARTER_PLOTS } from './config.js';
-import { START_WATER } from './game.js';
+import { START_WATER, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
 // Bottom space (design units) reserved for the HUD controls. Set dynamically
 // from the measured DOM control height (main.layout) so the grid never sits
@@ -60,9 +60,29 @@ export function tileCenter(col, row) {
   return { x: ox + (col - row) * ISO.tw, y: oy + (col + row) * ISO.th };
 }
 
-// Which plot (if any) sits under a point in design units. Inverse iso transform
-// + rounding to the nearest tile; returns index or -1.
+// Drawn height (px) of a plant, capped so tall tiers don't tower over — and hide
+// — the tiles behind them. Render and hit-testing share this.
+export function plantHeight(plant) {
+  const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
+  const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
+  return Math.min(ISO.th * 2.1 * growth * type.size, ISO.th * 3.1);
+}
+
+// Which plot (if any) is under a point in design units. Plants are picked
+// front-to-back first (so tapping a plant selects ITS tile, never a hidden tile
+// behind it), then the ground tile via the inverse iso transform.
 export function plotAt(state, x, y) {
+  const planted = state.plots
+    .filter((p) => p.plant)
+    .sort((a, b) => (b.col + b.row) - (a.col + a.row)); // nearest first
+  for (const p of planted) {
+    const c = tileCenter(p.col, p.row);
+    const hgt = plantHeight(p.plant);
+    if (x >= c.x - ISO.tw * 0.8 && x <= c.x + ISO.tw * 0.8 &&
+        y <= c.y + ISO.th * 0.6 && y >= c.y - hgt) {
+      return p.row * GRID.cols + p.col;
+    }
+  }
   const { ox, oy } = isoOrigin();
   const px = x - ox, py = y - oy;
   const col = Math.round((px / ISO.tw + py / ISO.th) / 2);

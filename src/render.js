@@ -1,7 +1,7 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
 import { DESIGN, HORIZON, CONTROL_BAND, ISO, GRID } from './config.js';
-import { tileCenter, getBottomReserve } from './state.js';
+import { tileCenter, getBottomReserve, plantHeight } from './state.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -282,7 +282,7 @@ export function renderScene(ctx, state, now = 0) {
 
     const tc = p.planted ? shade(top, 0.9) : shade(top, 1.0);
     tileBlock(ctx, c.x, c.y, tw, th, depth, tc, shade(top, 0.55), shade(top, 0.72));
-    if (p.plant) drawPlant(ctx, c.x, c.y, th * 2.7, p.plant);
+    if (p.plant) drawPlant(ctx, c.x, c.y, p.plant);
   }
 
   // The lone man in the foreground, standing at the near-left of his field.
@@ -477,9 +477,10 @@ const SHAPES = {
   },
 };
 
-// Draw a plant standing on its iso tile. `cx,baseY` is the tile center (the
-// plant grows upward from there); `ref` is a size reference (tile height *k).
-function drawPlant(ctx, cx, baseY, ref, plant) {
+// Draw a plant standing on its iso tile. `cx,baseY` is the tile center; the
+// plant grows upward from there. Height comes from plantHeight() (shared with
+// hit-testing), so what you see is what you tap.
+function drawPlant(ctx, cx, baseY, plant) {
   if (plant.status === 'dead') {
     // Withered: drooped brown stem, no leaves.
     ctx.strokeStyle = '#7a5a34';
@@ -487,14 +488,13 @@ function drawPlant(ctx, cx, baseY, ref, plant) {
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
-    ctx.quadraticCurveTo(cx + 3, baseY - ref * 0.28, cx + 9, baseY - ref * 0.22);
+    ctx.quadraticCurveTo(cx + 3, baseY - ISO.th * 0.6, cx + 9, baseY - ISO.th * 0.5);
     ctx.stroke();
     return;
   }
 
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
-  const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
-  const s = ref * growth * type.size; // drawn height in px (may overflow upward)
+  const s = plantHeight(plant); // shared with hit-testing; capped
 
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
   (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, type.color);
