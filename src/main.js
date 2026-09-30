@@ -93,6 +93,7 @@ function layout() {
     reserveCss = Math.max(CONTROL_BAND, Math.min(winH - top + 8, winH * 0.5));
   }
   computeLayout(winW, winH, reserveCss);
+  L.dpr = dpr;
 
   for (const [cv, cx] of [[canvas, ctx], [bgCanvas, bgCtx]]) {
     cv.style.width = winW + 'px';

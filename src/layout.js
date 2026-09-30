@@ -7,6 +7,7 @@ import { GRID, CONTROL_BAND } from './config.js';
 
 export const L = {
   w: 0, h: 0,           // viewport CSS px
+  dpr: 1,               // device pixel ratio (for crisp offscreen caches)
   unit: 1,              // UI scale relative to a phone baseline (fonts, strokes)
   horizonY: 0,          // sky/ground boundary, screen px
   groundBottom: 0,      // bottom of the ground (= h)

@@ -178,31 +178,53 @@ function drawFigure(ctx, x, feetY, s = 1, facing = 1) {
 
 // Full-window backdrop: all decorative scenery — sky, sun, ground, grass,
 // wildlife, clouds, rain — across the whole viewport (screen px, from L).
+// Offscreen cache of the backdrop's static layer (sky, ground, grass). It only
+// changes as the land greens, so it's rebuilt when the environment average moves
+// by a visible step (or on resize) — not every frame. Big win on cheap phones.
+let bgCache = null;
+let bgCacheKey = '';
+function staticBackdrop(avg) {
+  const { w, h, horizonY, dpr } = L;
+  const key = `${w}x${h}@${dpr}|${horizonY}|${Math.round(avg * 300)}`;
+  if (bgCache && key === bgCacheKey) return bgCache;
+  if (!bgCache) bgCache = document.createElement('canvas');
+  bgCache.width = Math.max(1, Math.round(w * dpr));
+  bgCache.height = Math.max(1, Math.round(h * dpr));
+  const c = bgCache.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const col = sceneColors(avg);
+  const cs = (v) => `rgb(${v[0] | 0},${v[1] | 0},${v[2] | 0})`;
+  const hy = Math.max(0, Math.min(h, horizonY));
+  if (hy > 0) {
+    const sky = c.createLinearGradient(0, 0, 0, hy);
+    sky.addColorStop(0, cs(col.skyTop));
+    sky.addColorStop(1, cs(col.skyBot));
+    c.fillStyle = sky;
+    c.fillRect(0, 0, w, hy);
+  }
+  const gnd = c.createLinearGradient(0, hy, 0, h);
+  gnd.addColorStop(0, cs(col.grTop));
+  gnd.addColorStop(1, cs(col.grBot));
+  c.fillStyle = gnd;
+  c.fillRect(0, hy, w, h - hy);
+  drawTufts(c, w, hy, h, avg);
+
+  bgCacheKey = key;
+  return bgCache;
+}
+
 export function renderBackdrop(ctx, state, now = 0) {
   const { w, h, horizonY } = L;
-  const col = sceneColors(avgMeter(state));
-  const cs = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
   const hy = Math.max(0, Math.min(h, horizonY));
   const avg = avgMeter(state);
   const time = now / 1000;
 
   ctx.clearRect(0, 0, w, h);
-  if (hy > 0) {
-    const sky = ctx.createLinearGradient(0, 0, 0, hy);
-    sky.addColorStop(0, cs(col.skyTop));
-    sky.addColorStop(1, cs(col.skyBot));
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, hy);
-  }
-  const gnd = ctx.createLinearGradient(0, hy, 0, h);
-  gnd.addColorStop(0, cs(col.grTop));
-  gnd.addColorStop(1, cs(col.grBot));
-  ctx.fillStyle = gnd;
-  ctx.fillRect(0, hy, w, h - hy);
+  ctx.drawImage(staticBackdrop(avg), 0, 0, w, h);
 
   const rainI = (state.rain && state.rain.intensity) || 0;
   drawSun(ctx, w * 0.74, hy * 0.42, avg, time, 1 - 0.72 * rainI);
-  drawTufts(ctx, w, hy, h, avg);
   drawCritters(ctx, w, hy, h, avg, time);
 
   // Clouds roll in and the light dims as the shower builds; both ease with
@@ -351,17 +373,52 @@ const CLOUDS = (() => {
   return out;
 })();
 
+// Pre-rendered cloud sprites — each cloud drawn once in a fair and a storm
+// colouring (rebuilt only when scale/dpr change), then crossfaded by intensity.
+// Two image draws per cloud instead of nine radial gradients every frame.
+const CLOUD_W = 4.2, CLOUD_H = 2.4; // sprite size in units of the cloud's s
+let cloudSprites = [];
+let cloudSpriteKey = '';
+function cloudSpriteSet() {
+  const key = `${L.unit.toFixed(3)}@${L.dpr}`;
+  if (key === cloudSpriteKey) return cloudSprites;
+  const paint = (s, top, bot) => {
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(s * CLOUD_W * L.dpr));
+    cv.height = Math.max(1, Math.round(s * CLOUD_H * L.dpr));
+    const c = cv.getContext('2d');
+    c.setTransform(L.dpr, 0, 0, L.dpr, 0, 0);
+    puffCloud(c, s * CLOUD_W / 2, s * CLOUD_H / 2, s, top, bot, 1);
+    return cv;
+  };
+  cloudSprites = CLOUDS.map((c) => {
+    const s = c.s * L.unit;
+    return {
+      s,
+      fair: paint(s, [236, 239, 243], [196, 201, 210]),  // sunlit
+      storm: paint(s, [150, 158, 170], [96, 105, 120]),  // storm
+    };
+  });
+  cloudSpriteKey = key;
+  return cloudSprites;
+}
+
 // Clouds fade in with intensity, darken as the storm builds, and slide across.
 function drawClouds(ctx, w, horizonY, time, intensity) {
-  const top = lerpArr([236, 239, 243], [150, 158, 170], intensity); // sunlit -> storm top
-  const bot = lerpArr([196, 201, 210], [96, 105, 120], intensity);  // shaded underside
   const alpha = Math.min(1, 0.35 + intensity * 0.65);
-  for (const c of CLOUDS) {
-    const s = c.s * L.unit;
+  const sprites = cloudSpriteSet();
+  CLOUDS.forEach((c, i) => {
+    const { s, fair, storm } = sprites[i];
     const span = w + s * 6;
     const x = ((c.phase * span + time * c.sp) % span) - s * 3;
-    puffCloud(ctx, x, horizonY * c.fy, s, top, bot, alpha);
-  }
+    const dx = x - s * CLOUD_W / 2, dy = horizonY * c.fy - s * CLOUD_H / 2;
+    const dw = s * CLOUD_W, dh = s * CLOUD_H;
+    ctx.globalAlpha = alpha * (1 - intensity);
+    ctx.drawImage(fair, dx, dy, dw, dh);
+    ctx.globalAlpha = alpha * intensity;
+    ctx.drawImage(storm, dx, dy, dw, dh);
+  });
+  ctx.globalAlpha = 1;
 }
 
 // Wildlife that returns as milestones are passed — a living, animated reward,
