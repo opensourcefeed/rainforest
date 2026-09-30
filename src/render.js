@@ -1,7 +1,7 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
 import { DESIGN, HORIZON, CONTROL_BAND } from './config.js';
-import { plotRect } from './state.js';
+import { plotRect, getBottomReserve } from './state.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -135,11 +135,9 @@ export function renderScene(ctx, state) {
       const cx = r.x + r.w / 2;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       ctx.font = 'bold 13px system-ui, sans-serif';
-      ctx.fillText('+', cx, r.y + r.h * 0.38);
-      ctx.font = '10px system-ui, sans-serif';
-      ctx.fillText(`${nextUnlock}💧`, cx, r.y + r.h * 0.68);
+      ctx.fillText(`+${nextUnlock}💧`, cx, r.y + r.h / 2);
       continue;
     }
 
@@ -156,13 +154,15 @@ export function renderScene(ctx, state) {
   drawFx(ctx, state);
 
   // Bottom control band — a subtle darkening so the HUD buttons have a footing
-  // and read as chrome rather than floating over the grid.
-  const bandTop = h - CONTROL_BAND;
+  // and read as chrome rather than floating over the grid. Height matches the
+  // dynamically-measured control reserve.
+  const bandH = getBottomReserve();
+  const bandTop = h - bandH;
   const band = ctx.createLinearGradient(0, bandTop, 0, h);
   band.addColorStop(0, 'rgba(0,0,0,0)');
   band.addColorStop(1, 'rgba(0,0,0,0.22)');
   ctx.fillStyle = band;
-  ctx.fillRect(0, bandTop, w, CONTROL_BAND);
+  ctx.fillRect(0, bandTop, w, bandH);
 }
 
 // Wildlife that returns as milestones are passed — a living reward.

@@ -1,7 +1,19 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
-import { DESIGN, HORIZON, GRID, STARTER_PLOTS } from './config.js';
+import { DESIGN, HORIZON, GRID, CONTROL_BAND, STARTER_PLOTS } from './config.js';
 import { START_WATER } from './game.js';
+
+// Bottom space (design units) reserved for the HUD controls. Set dynamically
+// from the measured DOM control height (main.layout) so the grid never sits
+// under the selector/buttons on any screen. Starts at the static fallback.
+let bottomReserve = CONTROL_BAND;
+export function setBottomReserve(units) {
+  // Clamp so the grid always keeps a usable height.
+  const gridTop = HORIZON + GRID.padTop;
+  const maxReserve = DESIGN.h - gridTop - 140;
+  bottomReserve = Math.max(CONTROL_BAND, Math.min(units, maxReserve));
+}
+export function getBottomReserve() { return bottomReserve; }
 
 export function createState() {
   const plots = [];
@@ -31,7 +43,7 @@ export function createState() {
 export function plotRect(col, row) {
   const usableW = DESIGN.w - GRID.sideMargin * 2;
   const gridTop = HORIZON + GRID.padTop;
-  const usableH = DESIGN.h - gridTop - GRID.padBottom;
+  const usableH = DESIGN.h - gridTop - bottomReserve;
 
   const cellW = (usableW - GRID.gutter * (GRID.cols - 1)) / GRID.cols;
   const cellH = (usableH - GRID.gutter * (GRID.rows - 1)) / GRID.rows;

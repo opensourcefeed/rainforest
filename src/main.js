@@ -1,7 +1,7 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
 import { DESIGN, MAX_DPR } from './config.js';
-import { plotAt } from './state.js';
+import { plotAt, setBottomReserve } from './state.js';
 import { plantSeed, unlockPlot, updateWorld, survivalChance, WATER_PER_COLLECT } from './game.js';
 import { renderScene } from './render.js';
 import { createHud } from './hud.js';
@@ -25,6 +25,8 @@ const state = loadGame();
 const hud = createHud({
   onCollectWater() { state.water += WATER_PER_COLLECT; },
   onSelectType(id) { state.selectedType = id; },
+  // Selector height changes when a new tier unlocks; re-measure the reserve.
+  onLayoutChange() { scheduleLayout(); },
 });
 
 // --- Layout: fit design aspect inside usable area (viewport minus insets) ---
@@ -64,6 +66,15 @@ function layout() {
   hudEl.style.height = rect.height + 'px';
   hudEl.style.right = 'auto';
   hudEl.style.bottom = 'auto';
+
+  // Reserve grid space for the actual measured height of the bottom control
+  // cluster (selector + hint + button), so plots never sit under it on any
+  // screen. The selector is the topmost bottom control.
+  const typesEl = hudEl.querySelector('.hud-types');
+  if (typesEl && view.scale > 0) {
+    const reserveCss = rect.bottom - typesEl.getBoundingClientRect().top;
+    setBottomReserve(reserveCss / view.scale + 10); // +gap
+  }
 }
 
 // Map a pointer event (client px) to design-unit coordinates, or null if outside.
@@ -156,6 +167,7 @@ setInterval(() => saveGame(state), 5000);
 addEventListener('visibilitychange', () => { if (document.hidden) saveGame(state); });
 addEventListener('pagehide', () => saveGame(state));
 
+hud.update(state); // build the selector so the first layout can measure it
 layout();
 // Title screen first; on Start, show the first-run explainer (once). The game
 // loop runs behind the overlays so the desert is already rendered.

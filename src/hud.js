@@ -4,7 +4,7 @@
 
 import { currentStage, stageProgress, livingCount, waterRate, availableTypes } from './game.js';
 
-export function createHud({ onCollectWater, onSelectType }) {
+export function createHud({ onCollectWater, onSelectType, onLayoutChange }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -85,6 +85,7 @@ export function createHud({ onCollectWater, onSelectType }) {
         <span class="t-name">${t.name}</span><span class="t-cost">${t.cost}💧</span>
       </button>`).join('');
     lastTypeCount = avail.length;
+    if (onLayoutChange) onLayoutChange(); // control height changed; re-measure
   }
 
   return {

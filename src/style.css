@@ -158,11 +158,11 @@ html, body {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 98px;
+  bottom: 84px;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   padding: 0 10px;
   pointer-events: none;
 }
@@ -172,8 +172,8 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  min-height: 44px;
-  padding: 5px 10px;
+  min-height: 40px;
+  padding: 4px 9px;
   border: 1.5px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.4);
@@ -191,7 +191,7 @@ html, body {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 78px;
+  bottom: 66px;
   text-align: center;
   font-size: 12px;
   font-weight: 600;
@@ -204,14 +204,14 @@ html, body {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 18px;
+  bottom: 14px;
   display: flex;
   justify-content: center;
   gap: 12px;
 }
 .hud-btn {
   pointer-events: auto;
-  min-height: 52px;          /* comfortably tappable on every device */
+  min-height: 48px;          /* comfortably tappable on every device */
   min-width: 140px;
   padding: 0 22px;
   border: none;
