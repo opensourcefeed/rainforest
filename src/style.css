@@ -138,6 +138,15 @@ html, body {
   font-weight: 700;
   font-size: 15px;
 }
+.celebrate-unlock {
+  margin-top: 12px;
+  padding: 9px 12px;
+  background: rgba(111, 224, 106, 0.16);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #dff0d8;
+}
 .celebrate-real {
   margin-top: 16px;
   padding: 12px 14px;
@@ -452,6 +461,11 @@ html, body {
   position: absolute; top: 4px; right: 4px;
   width: 10px; height: 10px; border-radius: 50%;
   background: #ff5a4d; box-shadow: 0 0 0 2px #3a4a2e;
+  animation: hudBlink 1s ease-in-out infinite;
+}
+@keyframes hudBlink {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.55; }
 }
 .hud-btn-sec { position: relative; }
 

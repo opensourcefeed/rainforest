@@ -2,6 +2,7 @@
 // stageReached), so it's a memorable payoff, not a nag. The caller pauses the
 // game while it's shown and resumes on Continue.
 import { sfx } from './sound.js';
+import { STAGES, PLANT_TYPES } from './game.js';
 
 const FLAVOR = {
   Scrubland: { emoji: '🌵', line: 'Cacti take hold and shade begins to cool the ground.' },
@@ -45,6 +46,12 @@ export function createCelebration({ onContinue }) {
     show(milestone) {
       const f = FLAVOR[milestone.name] || { emoji: '🌱', line: 'The land grows greener.' };
       const real = REAL_LINES[milestone.name] || 'Plant a real tree today — it outlives every game.';
+      // Which plant type this stage unlocks (minStage === stage index).
+      const stageIdx = STAGES.findIndex((s) => s.name === milestone.name);
+      const unlocked = PLANT_TYPES.find((t) => t.minStage === stageIdx);
+      const unlockHtml = (unlocked && stageIdx > 0)
+        ? `<div class="celebrate-unlock">${unlocked.emoji} New plant unlocked: <b>${unlocked.name}</b> · ${unlocked.cost}💧</div>`
+        : '';
       overlay.innerHTML = `
         <div class="confetti">${confetti()}</div>
         <div class="celebrate-card">
@@ -52,6 +59,7 @@ export function createCelebration({ onContinue }) {
           <div class="celebrate-kicker">New stage reached</div>
           <h2 class="celebrate-title">${milestone.name}</h2>
           <p class="celebrate-line">${f.line}</p>
+          ${unlockHtml}
           <div class="celebrate-reward">Reward: +${milestone.bonus} 💧</div>
           <div class="celebrate-real"><span>🌱 In the real world</span>${real}</div>
           <button type="button" class="celebrate-btn">Continue</button>

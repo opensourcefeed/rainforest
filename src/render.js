@@ -125,12 +125,14 @@ function drawSun(ctx, sx, sy, avg, time, dim = 1) {
   ctx.globalAlpha = 1;
 }
 
-// The lone man — a simple recognizable figure planting in the desert.
-function drawFigure(ctx, x, feetY, s = 1) {
+// The lone man — a simple recognizable figure. `facing` -1 mirrors him.
+function drawFigure(ctx, x, feetY, s = 1, facing = 1) {
   const hipY = feetY - 13 * s;
   const shoulderY = feetY - 26 * s;
   const headY = feetY - 31 * s;
 
+  ctx.save();
+  if (facing < 0) { ctx.translate(2 * x, 0); ctx.scale(-1, 1); }
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
@@ -171,6 +173,7 @@ function drawFigure(ctx, x, feetY, s = 1) {
   ctx.beginPath();
   ctx.arc(x, headY, 3.6 * s, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 }
 
 // Full-window backdrop: all decorative scenery — sky, sun, ground, grass,
@@ -212,7 +215,7 @@ export function renderBackdrop(ctx, state, now = 0) {
   }
 }
 
-export function renderScene(ctx, state, now = 0) {
+export function renderScene(ctx, state, now = 0, man = null) {
   const { w, h, tw, th, unit } = L;
   const time = now / 1000;
   const avg = avgMeter(state); // 0 desert .. 1 rainforest
@@ -266,9 +269,14 @@ export function renderScene(ctx, state, now = 0) {
     }
   }
 
-  // The lone man in the foreground, standing at the near-left of his field.
-  const fl = tileCenter(0, GRID.rows - 1);
-  drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3 * unit);
+  // The lone man in the foreground — at his live position, with a walk bob.
+  if (man) {
+    const bob = man.moving ? Math.abs(Math.sin(time * 14)) * 2 * unit : 0;
+    drawFigure(ctx, man.x, man.y - bob, 1.3 * unit, man.facing);
+  } else {
+    const fl = tileCenter(0, GRID.rows - 1);
+    drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3 * unit);
+  }
 
   // Transient feedback effects, on top of the plants.
   drawFx(ctx, state);

@@ -8,11 +8,11 @@ export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
 // more water but heal the land faster (meterMul) and yield more water (yieldMul)
 // — the core strategy and the deeper water sink. `size`/`color` drive rendering.
 export const PLANT_TYPES = [
-  { id: 'seed',   name: 'Hardy seed', cost: 2,  minStage: 0, meterMul: 1.0, yieldMul: 0.0, growTime: 20, color: '#7bbf54', size: 1.0 },
-  { id: 'cactus', name: 'Cactus',     cost: 6,  minStage: 1, meterMul: 1.7, yieldMul: 0.5, growTime: 22, color: '#4f9a3f', size: 1.15 },
-  { id: 'shrub',  name: 'Shrub',      cost: 16, minStage: 2, meterMul: 2.7, yieldMul: 1.2, growTime: 26, color: '#3f8f3a', size: 1.35 },
-  { id: 'tree',   name: 'Tree',       cost: 40, minStage: 3, meterMul: 4.5, yieldMul: 2.4, growTime: 32, color: '#2f7f34', size: 1.7 },
-  { id: 'canopy', name: 'Canopy',     cost: 95, minStage: 4, meterMul: 7.0, yieldMul: 4.2, growTime: 40, color: '#256b2f', size: 2.1 },
+  { id: 'seed',   name: 'Hardy seed', emoji: '🌱', cost: 2,  minStage: 0, meterMul: 1.0, yieldMul: 0.0, growTime: 20, color: '#7bbf54', size: 1.0 },
+  { id: 'cactus', name: 'Cactus',     emoji: '🌵', cost: 6,  minStage: 1, meterMul: 1.7, yieldMul: 0.5, growTime: 22, color: '#4f9a3f', size: 1.15 },
+  { id: 'shrub',  name: 'Shrub',      emoji: '🌿', cost: 16, minStage: 2, meterMul: 2.7, yieldMul: 1.2, growTime: 26, color: '#3f8f3a', size: 1.35 },
+  { id: 'tree',   name: 'Tree',       emoji: '🌳', cost: 40, minStage: 3, meterMul: 4.5, yieldMul: 2.4, growTime: 32, color: '#2f7f34', size: 1.7 },
+  { id: 'canopy', name: 'Canopy',     emoji: '🌴', cost: 95, minStage: 4, meterMul: 7.0, yieldMul: 4.2, growTime: 40, color: '#256b2f', size: 2.1 },
 ];
 export const TYPE_BY_ID = Object.fromEntries(PLANT_TYPES.map((t) => [t.id, t]));
 

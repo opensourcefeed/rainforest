@@ -1,7 +1,7 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
-import { MAX_DPR, CONTROL_BAND } from './config.js';
-import { plotAt } from './state.js';
+import { MAX_DPR, CONTROL_BAND, GRID } from './config.js';
+import { plotAt, tileCenter } from './state.js';
 import { computeLayout, L } from './layout.js';
 import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount, initQuests, doPrestige } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
@@ -28,6 +28,19 @@ let showDebug = false;
 // Restore the save (with offline progress applied) or start fresh.
 const state = loadGame();
 initQuests(state); // assign starting goals if none
+
+// The lone man walks to a tapped tile and acts (unlock/plant) on arrival, then
+// stays put. lastIdx = the tile he's standing on (so he tracks it on resize).
+const man = { x: 0, y: 0, facing: 1, moving: false, queue: [], lastIdx: null };
+function manStandAt(idx) {
+  const p = state.plots[idx];
+  const t = tileCenter(p.col, p.row);
+  return { x: t.x, y: t.y + L.th * 0.2 };
+}
+function manRest() {
+  const t = tileCenter(0, GRID.rows - 1);
+  return { x: t.x - L.tw * 0.5, y: t.y + L.th * 0.6 };
+}
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
@@ -80,6 +93,12 @@ function layout() {
     cv.height = Math.round(winH * dpr);
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
+
+  // Keep the idle man on his current tile (or the rest spot) as the grid resizes.
+  if (!man.queue.length) {
+    const r = man.lastIdx != null ? manStandAt(man.lastIdx) : manRest();
+    man.x = r.x; man.y = r.y;
+  }
 }
 
 // Pointer event (client px) -> canvas/screen px.
@@ -100,8 +119,38 @@ const STEP = 1 / 60; // seconds per update
 let acc = 0;
 let last = performance.now();
 
+// Walk the man toward his next queued tile and act on arrival.
+function moveMan(dt) {
+  if (man.queue.length) {
+    man.moving = true;
+    const idx = man.queue[0];
+    const plot = state.plots[idx];
+    const t = tileCenter(plot.col, plot.row);
+    const tx = t.x, ty = t.y + L.th * 0.2;
+    const dx = tx - man.x, dy = ty - man.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (dx < -0.5) man.facing = -1; else if (dx > 0.5) man.facing = 1;
+    const step = 640 * L.unit * dt; // quick
+    if (dist <= step + 4) {
+      man.x = tx; man.y = ty;
+      if (!plot.unlocked) { if (unlockPlot(state, idx)) sfx.unlock(); }
+      else if (plantSeed(state, idx)) sfx.plant();
+      man.lastIdx = idx;
+      man.queue.shift();
+    } else {
+      man.x += dx / dist * step;
+      man.y += dy / dist * step;
+    }
+  } else {
+    // Idle: stay where he is (no walking back to the start).
+    man.moving = false;
+    man.facing = 1;
+  }
+}
+
 function update(dt) {
   updateWorld(state, dt);
+  moveMan(dt);
 }
 
 function frame(now) {
@@ -118,7 +167,7 @@ function frame(now) {
     }
   }
   renderBackdrop(bgCtx, state, now);
-  renderScene(ctx, state, now);
+  renderScene(ctx, state, now, man);
   hud.update(state);
   shop.refresh(); // keep affordability current while open
   quests.refresh();
@@ -161,12 +210,12 @@ function toggleDebug() {
 addEventListener('keydown', (e) => { if (e.key === 'd' || e.key === 'D') toggleDebug(); });
 addEventListener('pointerdown', (e) => {
   if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); return; } // above the eco panel
+  if (e.target !== canvas) return; // ignore HUD buttons and open overlays
   const p = eventToScreen(e);
   const plotIndex = plotAt(state, p.x, p.y);
   if (plotIndex === -1) return;
-  const plot = state.plots[plotIndex];
-  if (!plot.unlocked) { if (unlockPlot(state, plotIndex)) sfx.unlock(); } // tap locked land
-  else if (plantSeed(state, plotIndex)) sfx.plant();
+  // Queue the tile; the man walks there and acts on arrival (see moveMan).
+  if (man.queue.length < 8) man.queue.push(plotIndex);
 });
 
 // Web Audio must start from a user gesture.
