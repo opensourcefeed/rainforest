@@ -19,6 +19,24 @@ function diamond(ctx, cx, cy, tw, th) {
   ctx.closePath();
 }
 
+// A raised isometric soil block: two side faces + a top diamond.
+function tileBlock(ctx, cx, cy, tw, th, depth, topC, leftC, rightC) {
+  // Left face
+  ctx.beginPath();
+  ctx.moveTo(cx - tw, cy); ctx.lineTo(cx, cy + th);
+  ctx.lineTo(cx, cy + th + depth); ctx.lineTo(cx - tw, cy + depth); ctx.closePath();
+  ctx.fillStyle = leftC; ctx.fill();
+  // Right face
+  ctx.beginPath();
+  ctx.moveTo(cx + tw, cy); ctx.lineTo(cx, cy + th);
+  ctx.lineTo(cx, cy + th + depth); ctx.lineTo(cx + tw, cy + depth); ctx.closePath();
+  ctx.fillStyle = rightC; ctx.fill();
+  // Top
+  diamond(ctx, cx, cy, tw, th);
+  ctx.fillStyle = topC; ctx.fill();
+  ctx.strokeStyle = 'rgba(40, 30, 16, 0.45)'; ctx.lineWidth = 1; ctx.stroke();
+}
+
 const lerpArr = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 const rgb = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
 
@@ -222,16 +240,21 @@ export function renderScene(ctx, state, now = 0) {
   // The lone man, standing on the horizon just left of centre.
   drawFigure(ctx, w * 0.42, HORIZON, 1.15);
 
-  // Planting plots — isometric diamond tiles, drawn back-to-front so nearer
-  // tiles and taller plants overlap farther ones correctly.
+  // Planting plots — isometric soil blocks, drawn back-to-front so nearer tiles
+  // and taller plants overlap farther ones correctly. Tops green with progress.
   const { tw, th } = ISO;
+  const depth = 10;
+  const soil = [150, 112, 64], grass = [96, 150, 70];
+  const top = lerpArr(soil, grass, Math.min(1, avg * 1.1));
+  const shade = (c, k) => `rgb(${(c[0] * k) | 0},${(c[1] * k) | 0},${(c[2] * k) | 0})`;
   const nextUnlock = unlockCost(state);
   const ordered = [...state.plots].sort((a, b) => (a.col + a.row) - (b.col + b.row));
   for (const p of ordered) {
     const c = tileCenter(p.col, p.row);
-    diamond(ctx, c.x, c.y, tw, th);
 
     if (!p.unlocked) {
+      // Locked desert: a flat dim diamond with its buy price.
+      diamond(ctx, c.x, c.y, tw, th);
       ctx.fillStyle = 'rgba(28, 20, 8, 0.34)';
       ctx.fill();
       ctx.setLineDash([4, 3]);
@@ -247,11 +270,8 @@ export function renderScene(ctx, state, now = 0) {
       continue;
     }
 
-    ctx.fillStyle = p.planted ? 'rgba(74, 54, 28, 0.5)' : 'rgba(120, 92, 50, 0.42)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(48, 36, 20, 0.6)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
+    const tc = p.planted ? shade(top, 0.9) : shade(top, 1.0);
+    tileBlock(ctx, c.x, c.y, tw, th, depth, tc, shade(top, 0.55), shade(top, 0.72));
     if (p.plant) drawPlant(ctx, c.x, c.y, th * 2.7, p.plant);
   }
 
