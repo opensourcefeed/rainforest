@@ -63,6 +63,22 @@ export const WATER_REGEN_PER_SEC = 0.08;
 export const WATER_PER_COLLECT = 3;
 export const START_WATER = 8;
 
+// Established plants yield water as the land grows humid (dew/rain) — the idle
+// economy: income scales with your grove, so water stops being useless and the
+// expand/plant loop sustains itself. Scaled by growth and humidity.
+export const WATER_YIELD = 0.16;
+
+// Current total water income per second (trickle + grove yield), for the HUD.
+export function waterRate(state) {
+  let rate = WATER_REGEN_PER_SEC;
+  const humidity = state.meters.humidity;
+  for (const plot of state.plots) {
+    const p = plot.plant;
+    if (p && p.status === 'alive') rate += WATER_YIELD * p.growth * humidity;
+  }
+  return rate;
+}
+
 // Transient feedback effects. Kinds: 'chance' (survival % shown when planting),
 // 'survive' (green pop), 'die' (wither mark). Aged in updateWorld.
 export const FX_TTL = { chance: 1.1, survive: 0.9, die: 0.9, unlock: 1.0, need: 1.0 };
@@ -162,6 +178,8 @@ export function updateWorld(state, dt) {
       m.soil = Math.min(1, m.soil + g);
       m.shade = Math.min(1, m.shade + g);
       m.humidity = Math.min(1, m.humidity + g);
+      // Grove water yield — grows with the plant and the land's humidity.
+      state.water += WATER_YIELD * dt * p.growth * m.humidity;
     }
   }
 }

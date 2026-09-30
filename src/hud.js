@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, SEED_COST } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, SEED_COST } from './game.js';
 
 export function createHud({ onCollectWater }) {
   const root = document.getElementById('hud');
@@ -23,7 +23,8 @@ export function createHud({ onCollectWater }) {
 
   const water = document.createElement('div');
   water.className = 'hud-stat';
-  water.innerHTML = `<span class="hud-icon">💧</span><span class="hud-value" id="hud-water">0</span>`;
+  water.innerHTML = `<span class="hud-icon">💧</span><span class="hud-value" id="hud-water">0</span>`
+    + `<span class="hud-rate" id="hud-rate"></span>`;
 
   const living = document.createElement('div');
   living.className = 'hud-stat hud-stat-living';
@@ -47,6 +48,7 @@ export function createHud({ onCollectWater }) {
   root.append(stage, eco, water, living, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
+  const rateValue = root.querySelector('#hud-rate');
   const livingValue = root.querySelector('#hud-living');
   const stageEl = root.querySelector('#hud-stage');
   const bars = {
@@ -57,6 +59,7 @@ export function createHud({ onCollectWater }) {
   const goalLabel = eco.querySelector('#eco-goal-label');
   const goalPct = eco.querySelector('#eco-goal-pct');
   let lastWater = null;
+  let lastRate = null;
   let lastLiving = null;
   let lastStage = -1;
 
@@ -66,6 +69,14 @@ export function createHud({ onCollectWater }) {
       if (shownWater !== lastWater) {
         waterValue.textContent = shownWater;
         lastWater = shownWater;
+      }
+
+      // Income rate (only worth showing once the grove produces).
+      const rate = waterRate(state);
+      const shownRate = rate >= 0.1 ? `+${rate.toFixed(1)}/s` : '';
+      if (shownRate !== lastRate) {
+        rateValue.textContent = shownRate;
+        lastRate = shownRate;
       }
 
       const living = livingCount(state);
