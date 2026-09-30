@@ -52,6 +52,20 @@ export function plantHeight(plant) {
   return Math.min(L.th * 1.7 * growth * type.size, L.th * 2.4);
 }
 
+// A ripe fruit or thirst bubble floats above its plant; tapping the icon itself
+// should hit that plant (checked before the ground tile). Returns index or -1.
+export function iconAt(state, x, y) {
+  const r = 16 * L.unit;
+  for (let i = 0; i < state.plots.length; i++) {
+    const pl = state.plots[i].plant;
+    if (!pl || pl.status !== 'alive' || !(pl.ripe || pl.thirsty)) continue;
+    const c = tileCenter(state.plots[i].col, state.plots[i].row);
+    const iy = c.y - plantHeight(pl) - 8 * L.unit;
+    if ((x - c.x) ** 2 + (y - iy) ** 2 <= r * r) return i;
+  }
+  return -1;
+}
+
 // Which plot is under a point (screen px) — purely by the ground tile diamond
 // (inverse iso transform), so EVERY tile is tappable by its own diamond
 // regardless of what's planted on neighbouring tiles.

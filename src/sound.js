@@ -89,6 +89,22 @@ function thump(vol = 0.5) {
   src.start();
 }
 
+// High-passed noise swish — water pouring.
+function splash(vol = 0.35) {
+  if (!ctx || !enabled) return;
+  const len = Math.floor(ctx.sampleRate * 0.3);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / len);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'bandpass'; hp.frequency.value = 2200; hp.Q.value = 0.8;
+  const g = ctx.createGain(); g.gain.value = vol;
+  src.connect(hp); hp.connect(g); g.connect(master);
+  src.start();
+}
+
 export const sfx = {
   // Planting: a soft dig + a small pop.
   plant() { thump(0.55); setTimeout(() => blip(420, 0.12, 'triangle', 0.3), 40); },
@@ -102,6 +118,10 @@ export const sfx = {
   wither() { slide(360, 150, 0.45, 'triangle', 0.24); },
   // A plant reaches full size — a light sparkle.
   mature() { arp([1047, 1319, 1568], 0.12, 'triangle', 0.18); },
+  // Harvesting a fruit — a juicy pluck.
+  harvest() { blip(880, 0.08, 'triangle', 0.26); setTimeout(() => blip(1320, 0.14, 'sine', 0.2), 45); },
+  // Watering a thirsty plant — a soft splash.
+  water() { splash(); setTimeout(() => blip(620, 0.14, 'sine', 0.16), 80); },
   // Advancing from the stage popup.
   advance() { blip(540, 0.1, 'triangle', 0.26); setTimeout(() => blip(810, 0.22, 'triangle', 0.26), 90); },
 };

@@ -1,7 +1,7 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
 import { MAX_DPR, CONTROL_BAND, GRID } from './config.js';
-import { plotAt, tileCenter } from './state.js';
+import { plotAt, iconAt, tileCenter } from './state.js';
 import { computeLayout, L } from './layout.js';
 import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, doPrestige } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
@@ -144,6 +144,8 @@ function moveMan(dt) {
       man.x = tx; man.y = ty;
       const done = actOnTile(state, idx);
       if (done === 'unlock') sfx.unlock();
+      else if (done === 'harvest') sfx.harvest();
+      else if (done === 'water') sfx.water();
       else if (done) sfx.plant();
       man.lastIdx = idx;
       man.queue.shift();
@@ -229,7 +231,8 @@ addEventListener('pointerdown', (e) => {
   if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); return; } // above the eco panel
   if (e.target !== canvas) return; // ignore HUD buttons and open overlays
   const p = eventToScreen(e);
-  const plotIndex = plotAt(state, p.x, p.y);
+  let plotIndex = iconAt(state, p.x, p.y); // fruit / thirst icons first
+  if (plotIndex === -1) plotIndex = plotAt(state, p.x, p.y);
   if (plotIndex === -1) return;
   // Queue the tile; the man walks there and acts on arrival (see moveMan).
   // Only walk if the tap would do something (unlock / plant / upgrade).

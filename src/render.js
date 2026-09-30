@@ -3,7 +3,7 @@
 import { GRID } from './config.js';
 import { tileCenter, plantHeight } from './state.js';
 import { L } from './layout.js';
-import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus } from './game.js';
+import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus, FRUIT_EMOJI } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -283,6 +283,15 @@ export function renderScene(ctx, state, now = 0, man = null) {
     const bonus = tileBonus(state, p);
     if (p.plant) {
       drawPlant(ctx, c.x, c.y, p.plant);
+      // Tap targets above the plant: a ripe fruit, or a 💧 when it's thirsty.
+      const icon = p.plant.thirsty ? '💧' : (p.plant.ripe ? FRUIT_EMOJI[p.plant.typeId] : null);
+      if (icon) {
+        const bob = Math.sin(time * 3 + p.col + p.row) * 2.5 * unit;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${Math.round(16 * unit)}px system-ui, sans-serif`;
+        ctx.fillText(icon, c.x, c.y - plantHeight(p.plant) - 8 * unit + bob);
+      }
       // Mixed grove (3+ species around it): a small gold marker on the tile.
       if (bonus.mixed && p.plant.status === 'alive') {
         ctx.fillStyle = '#f6d365';
@@ -532,6 +541,12 @@ function darken(hex, f) {
   const n = parseInt(hex.slice(1), 16);
   return `rgb(${(((n >> 16) & 255) * f) | 0},${(((n >> 8) & 255) * f) | 0},${((n & 255) * f) | 0})`;
 }
+// Blend a #rrggbb colour toward dry straw (a wilting plant).
+function wilt(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (v, w) => (v + (w - v) * 0.6) | 0;
+  return `rgb(${mix((n >> 16) & 255, 176)},${mix((n >> 8) & 255, 150)},${mix(n & 255, 92)})`;
+}
 // Filled disc with a dark rim so overlapping plants keep visible edges.
 function blob(ctx, x, y, r, fill, rim) {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -613,6 +628,8 @@ function drawPlant(ctx, cx, baseY, plant) {
   ctx.ellipse(cx, baseY + 1, Math.max(6, s * 0.32), Math.max(2, s * 0.13), 0, 0, Math.PI * 2);
   ctx.fill();
 
-  (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, type.color, darken(type.color, 0.55));
+  // Thirsty plants wilt toward a dry straw colour until watered.
+  const color = plant.thirsty ? wilt(type.color) : type.color;
+  (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, color, darken(color, 0.55));
   ctx.globalAlpha = 1;
 }

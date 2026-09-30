@@ -135,6 +135,8 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
 
       rain.hidden = !(state.rain && state.rain.intensity > 0.15);
       goalsDot.hidden = !anyClaimable(state);
+      // Once rain arrives, harvests + rain carry the economy; retire the jug.
+      collect.hidden = !!(state.rain && state.rain.unlocked);
 
       // Meter bars.
       bars.soil.style.width = (state.meters.soil * 100).toFixed(1) + '%';
