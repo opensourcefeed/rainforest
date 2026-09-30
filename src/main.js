@@ -165,6 +165,12 @@ function frame(now) {
       update(STEP);
       acc -= STEP;
     }
+    // Play at most one of each event sound per frame (avoid spam on mass plant).
+    if (state.events.length) {
+      if (state.events.includes('survive')) sfx.survive();
+      if (state.events.includes('wither')) sfx.wither();
+      state.events.length = 0;
+    }
   }
   renderBackdrop(bgCtx, state, now);
   renderScene(ctx, state, now, man);

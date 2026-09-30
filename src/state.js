@@ -33,6 +33,8 @@ export function createState() {
     // Transient visual effects (floating text, survive/die pops). Aged and
     // cleared in updateWorld; drawn by render. Not persisted.
     fx: [],
+    events: [], // one-shot game events (e.g. 'survive'/'wither') → sounds; drained each frame
+
     plots,
   };
 }

@@ -68,6 +68,7 @@ export function createCelebration({ onContinue }) {
       sfx.fanfare();
       const btn = overlay.querySelector('.celebrate-btn');
       btn.addEventListener('click', () => {
+        sfx.advance();
         overlay.hidden = true;
         overlay.innerHTML = '';
         onContinue();

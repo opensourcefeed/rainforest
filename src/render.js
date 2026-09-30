@@ -315,14 +315,27 @@ function drawRain(ctx, w, h, time, topY = 0, intensity = 1) {
   }
 }
 
-// A puffy cloud: several overlapping lobes.
-function puffCloud(ctx, cx, cy, s) {
-  for (const [dx, dy, r] of [
-    [-1.15, 0.15, 0.62], [-0.5, -0.35, 0.8], [0.2, -0.45, 0.92],
-    [0.9, -0.2, 0.72], [1.35, 0.15, 0.55], [0.35, 0.2, 0.85], [-0.2, 0.22, 0.9],
-  ]) {
+// Cloud lobes (dx, dy, r). Bottom row wider/flatter, top rounded — a real
+// cumulus silhouette.
+const CLOUD_LOBES = [
+  [-1.25, 0.28, 0.6], [-0.65, 0.3, 0.72], [0.0, 0.32, 0.78], [0.7, 0.3, 0.72], [1.3, 0.28, 0.58],
+  [-0.8, -0.18, 0.72], [-0.1, -0.32, 0.9], [0.6, -0.22, 0.78], [0.15, -0.55, 0.6],
+];
+
+// A soft, volumetric cloud: each lobe is a radial gradient (feathered edge),
+// upper lobes lit lighter, lower lobes shadowed, so it reads as a real cloud.
+function puffCloud(ctx, cx, cy, s, top, bot, alpha) {
+  for (const [dx, dy, r] of CLOUD_LOBES) {
+    const lx = cx + dx * s, ly = cy + dy * s, lr = r * s;
+    const lit = Math.max(0, Math.min(1, 0.55 - dy)); // top lobes -> lighter
+    const col = lerpArr(bot, top, lit).map((v) => v | 0);
+    const g = ctx.createRadialGradient(lx, ly - lr * 0.25, lr * 0.15, lx, ly, lr);
+    g.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},${alpha})`);
+    g.addColorStop(0.65, `rgba(${col[0]},${col[1]},${col[2]},${alpha * 0.92})`);
+    g.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0)`);
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(cx + dx * s, cy + dy * s, r * s, r * s * 0.78, 0, 0, Math.PI * 2);
+    ctx.ellipse(lx, ly, lr, lr * 0.82, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -332,20 +345,22 @@ const CLOUDS = (() => {
   let seed = 7;
   const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const out = [];
-  for (let i = 0; i < 9; i++) {
-    out.push({ phase: rnd(), fy: 0.12 + rnd() * 0.32, s: 26 + rnd() * 24, sp: 5 + rnd() * 8 });
+  for (let i = 0; i < 8; i++) {
+    out.push({ phase: rnd(), fy: 0.14 + rnd() * 0.3, s: 30 + rnd() * 26, sp: 4 + rnd() * 7 });
   }
   return out;
 })();
 
-// Clouds fade in with intensity and slide continuously across the sky.
+// Clouds fade in with intensity, darken as the storm builds, and slide across.
 function drawClouds(ctx, w, horizonY, time, intensity) {
-  ctx.fillStyle = `rgba(96, 106, 118, ${0.66 * intensity})`;
+  const top = lerpArr([236, 239, 243], [150, 158, 170], intensity); // sunlit -> storm top
+  const bot = lerpArr([196, 201, 210], [96, 105, 120], intensity);  // shaded underside
+  const alpha = Math.min(1, 0.35 + intensity * 0.65);
   for (const c of CLOUDS) {
     const s = c.s * L.unit;
-    const span = w + s * 5;
-    const x = ((c.phase * span + time * c.sp) % span) - s * 2.5; // -2.5s .. w+2.5s
-    puffCloud(ctx, x, horizonY * c.fy, s);
+    const span = w + s * 6;
+    const x = ((c.phase * span + time * c.sp) % span) - s * 3;
+    puffCloud(ctx, x, horizonY * c.fy, s, top, bot, alpha);
   }
 }
 
@@ -446,78 +461,75 @@ function drawFx(ctx, state) {
   ctx.globalAlpha = 1;
 }
 
-function fillRound(ctx, x, y, w, h, rad) {
-  roundRect(ctx, x, y, w, h, rad);
-  ctx.fill();
+// Darken a #rrggbb color by factor f -> css string (for rims/trunks).
+function darken(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${(((n >> 16) & 255) * f) | 0},${(((n >> 8) & 255) * f) | 0},${((n & 255) * f) | 0})`;
 }
-function disc(ctx, x, y, rad) {
-  ctx.beginPath();
-  ctx.arc(x, y, rad, 0, Math.PI * 2);
-  ctx.fill();
+// Filled disc with a dark rim so overlapping plants keep visible edges.
+function blob(ctx, x, y, r, fill, rim) {
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = 1.4; ctx.strokeStyle = rim; ctx.stroke();
+}
+function roundFillStroke(ctx, x, y, w, h, rad) {
+  roundRect(ctx, x, y, w, h, rad); ctx.fill(); ctx.stroke();
 }
 
-// Per-type silhouettes. Each gets (ctx, cx, baseY, size, color) where `size`
-// is the drawn height in px (already scaled by growth), and draws upward from
-// baseY (the soil). Kept simple but distinct.
+// Per-type silhouettes — distinct shape + colour + a rim, so they read apart
+// even when overlapping. (ctx, cx, baseY, size px, color, rim).
 const SHAPES = {
-  seed(ctx, cx, baseY, s, color) {
-    ctx.strokeStyle = color; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY - s); ctx.stroke();
-    ctx.fillStyle = color;
+  seed(ctx, cx, baseY, s, color, rim) {
+    const h = s * 0.7; // small seedling, not a tall stick
+    ctx.strokeStyle = darken(color, 0.7); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.quadraticCurveTo(cx - 1.5, baseY - h * 0.6, cx, baseY - h); ctx.stroke();
+    ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1;
     for (const d of [-1, 1]) {
-      ctx.beginPath();
-      ctx.ellipse(cx + d * 5, baseY - s * 0.7, 5, 3, d * 0.6, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + d * 4, baseY - h * 0.78, 5, 3, d * 0.7, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
     }
   },
-  cactus(ctx, cx, baseY, s, color) {
-    const w = Math.max(6, s * 0.26);
-    ctx.fillStyle = color;
-    fillRound(ctx, cx - w / 2, baseY - s, w, s, w / 2); // trunk
-    // two arms
-    const armW = w * 0.7, armY = baseY - s * 0.55;
-    fillRound(ctx, cx - w * 1.3, armY - s * 0.18, armW, s * 0.4, armW / 2);
-    fillRound(ctx, cx - w * 1.3, armY, w * 1.1, armW, armW / 2);
-    fillRound(ctx, cx + w * 0.6, armY - s * 0.3, armW, s * 0.42, armW / 2);
-    fillRound(ctx, cx + w * 0.2, armY, w * 1.1, armW, armW / 2);
+  cactus(ctx, cx, baseY, s, color, rim) {
+    const w = Math.max(6, s * 0.3);
+    ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1.4;
+    roundFillStroke(ctx, cx - w / 2, baseY - s, w, s, w / 2); // column
+    const armY = baseY - s * 0.55, aw = w * 0.66;
+    roundFillStroke(ctx, cx - w * 1.25, armY - s * 0.16, aw, s * 0.42, aw / 2); // left arm
+    roundFillStroke(ctx, cx + w * 0.6, armY - s * 0.28, aw, s * 0.46, aw / 2); // right arm
+    ctx.strokeStyle = darken(color, 0.78); ctx.lineWidth = 1; // ribs
+    for (const rx of [cx - w * 0.18, cx + w * 0.18]) {
+      ctx.beginPath(); ctx.moveTo(rx, baseY - s + 3); ctx.lineTo(rx, baseY - 3); ctx.stroke();
+    }
   },
-  shrub(ctx, cx, baseY, s, color) {
-    const rad = s * 0.5;
-    ctx.fillStyle = color;
-    disc(ctx, cx - rad * 0.75, baseY - rad * 0.7, rad * 0.72);
-    disc(ctx, cx + rad * 0.75, baseY - rad * 0.7, rad * 0.72);
-    disc(ctx, cx, baseY - rad * 1.1, rad * 0.85);
-    disc(ctx, cx, baseY - rad * 0.6, rad * 0.8);
+  shrub(ctx, cx, baseY, s, color, rim) {
+    const r = s * 0.5; // squat, wide, no trunk
+    blob(ctx, cx - r * 0.85, baseY - r * 0.4, r * 0.66, color, rim);
+    blob(ctx, cx + r * 0.85, baseY - r * 0.4, r * 0.66, color, rim);
+    blob(ctx, cx, baseY - r * 0.95, r * 0.72, color, rim);
+    blob(ctx, cx, baseY - r * 0.5, r * 0.9, color, rim);
   },
-  tree(ctx, cx, baseY, s, color) {
-    const trunkH = s * 0.42;
-    ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = Math.max(2.5, s * 0.12); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY - trunkH); ctx.stroke();
-    const cr = (s - trunkH) * 0.62;
-    ctx.fillStyle = color;
-    disc(ctx, cx, baseY - trunkH - cr * 0.7, cr);
+  tree(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.5, tw = Math.max(2.5, s * 0.13);
+    ctx.fillStyle = '#7a5230';
+    roundRect(ctx, cx - tw / 2, baseY - trunkH, tw, trunkH, tw * 0.3); ctx.fill();
+    const cr = (s - trunkH) * 0.68;
+    blob(ctx, cx, baseY - trunkH - cr * 0.6, cr, color, rim); // single round canopy
   },
-  canopy(ctx, cx, baseY, s, color) {
-    const trunkH = s * 0.45;
-    ctx.strokeStyle = '#5a3b22'; ctx.lineWidth = Math.max(3, s * 0.14); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, baseY - trunkH); ctx.stroke();
+  canopy(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.5, tw = Math.max(3, s * 0.17);
+    ctx.fillStyle = '#5f3d20';
+    roundRect(ctx, cx - tw / 2, baseY - trunkH, tw, trunkH, tw * 0.3); ctx.fill();
     const cr = (s - trunkH) * 0.5;
-    ctx.fillStyle = color;
-    disc(ctx, cx - cr * 0.7, baseY - trunkH - cr * 0.6, cr * 0.9);
-    disc(ctx, cx + cr * 0.7, baseY - trunkH - cr * 0.6, cr * 0.9);
-    disc(ctx, cx, baseY - trunkH - cr * 1.25, cr * 1.05);
+    blob(ctx, cx - cr * 0.72, baseY - trunkH - cr * 0.55, cr * 0.92, color, rim);
+    blob(ctx, cx + cr * 0.72, baseY - trunkH - cr * 0.55, cr * 0.92, color, rim);
+    blob(ctx, cx, baseY - trunkH - cr * 1.25, cr * 1.1, color, rim); // tall layered crown
   },
 };
 
-// Draw a plant standing on its iso tile. `cx,baseY` is the tile center; the
-// plant grows upward from there. Height comes from plantHeight() (shared with
-// hit-testing), so what you see is what you tap.
+// Draw a plant standing on its iso tile, with a ground shadow to anchor it.
 function drawPlant(ctx, cx, baseY, plant) {
   if (plant.status === 'dead') {
-    // Withered: drooped brown stem, no leaves.
-    ctx.strokeStyle = '#7a5a34';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#7a5a34'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(cx, baseY);
     ctx.quadraticCurveTo(cx + 3, baseY - L.th * 0.6, cx + 9, baseY - L.th * 0.5);
@@ -526,9 +538,15 @@ function drawPlant(ctx, cx, baseY, plant) {
   }
 
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
-  const s = plantHeight(plant); // shared with hit-testing; capped
-
+  const s = plantHeight(plant);
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
-  (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, type.color);
+
+  // Ground shadow — separates the plant from the tile and its neighbours.
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY + 1, Math.max(6, s * 0.32), Math.max(2, s * 0.13), 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, type.color, darken(type.color, 0.55));
   ctx.globalAlpha = 1;
 }

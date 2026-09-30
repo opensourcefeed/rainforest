@@ -56,6 +56,12 @@ export const sfx = {
   unlock() { blip(440, 0.08, 'square', 0.14); setTimeout(() => blip(660, 0.12, 'square', 0.12), 60); },
   upgrade() { arp([523, 659, 784], 0.16, 'triangle', 0.2); },
   fanfare() { arp([523, 659, 784, 1047], 0.32, 'triangle', 0.24); },
+  // A plant takes root — bright two-note lift.
+  survive() { blip(700, 0.11, 'sine', 0.15); setTimeout(() => blip(950, 0.13, 'sine', 0.13), 55); },
+  // A seedling withers — soft low fall.
+  wither() { blip(250, 0.16, 'sine', 0.14); setTimeout(() => blip(175, 0.22, 'sine', 0.11), 70); },
+  // Advancing from the stage popup.
+  advance() { blip(540, 0.1, 'triangle', 0.2); setTimeout(() => blip(810, 0.2, 'triangle', 0.2), 90); },
 };
 
 export function toggleMuted() {

@@ -76,6 +76,7 @@ export function loadGame() {
     applyOffline(state, capped);
     state.offlineSeconds = capped; // for the boot screen "while away" note (not persisted)
     state.milestone = null; // don't pop a banner from offline catch-up
+    state.events = []; // don't play a burst of sounds from offline catch-up
   } catch {
     return createState(); // corrupt save — start clean rather than crash
   }
