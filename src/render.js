@@ -2,7 +2,7 @@
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
 import { DESIGN, HORIZON, CONTROL_BAND } from './config.js';
 import { plotRect } from './state.js';
-import { avgMeter, unlockCost, STAGES } from './game.js';
+import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -230,33 +230,34 @@ function drawPlant(ctx, r, plant) {
     return;
   }
 
-  // settling (slightly translucent) or alive (full green). Alive plants scale
-  // with growth: a seedling grows into a fuller plant.
+  // settling (slightly translucent) or alive. Alive plants scale with growth
+  // and their type: a hardy sprout vs a big canopy tree.
+  const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
   const growth = plant.growth || 0;
   const scale = plant.status === 'settling' ? 0.5 : 0.45 + 0.55 * growth;
-  const h = (r.h * 0.55) * scale;
-  const leafR = 4 + 5 * (plant.status === 'settling' ? 0 : growth);
+  const h = Math.min(r.h * 0.55 * scale * type.size, r.h * 1.6); // may overflow upward
+  const leafR = (4 + 5 * (plant.status === 'settling' ? 0 : growth)) * (0.7 + 0.3 * type.size);
 
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
-  ctx.strokeStyle = '#3f8f3a';
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = type.color;
+  ctx.lineWidth = 2 + type.size;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(cx, baseY);
   ctx.lineTo(cx, baseY - h);
   ctx.stroke();
 
-  ctx.fillStyle = '#4faf47';
+  ctx.fillStyle = type.color;
   // Base pair of leaves.
   for (const dir of [-1, 1]) {
     ctx.beginPath();
     ctx.ellipse(cx + dir * leafR * 0.8, baseY - h * 0.7, leafR, leafR * 0.6, dir * 0.6, 0, Math.PI * 2);
     ctx.fill();
   }
-  // A canopy blob appears as the plant matures.
-  if (growth > 0.5 && plant.status === 'alive') {
+  // A canopy blob appears as the plant matures (bigger for higher tiers).
+  if (growth > 0.4 && plant.status === 'alive') {
     ctx.beginPath();
-    ctx.arc(cx, baseY - h, leafR * 1.4 * growth, 0, Math.PI * 2);
+    ctx.arc(cx, baseY - h, leafR * 1.4 * growth * type.size, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;

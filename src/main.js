@@ -23,6 +23,7 @@ const state = loadGame();
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
 const hud = createHud({
   onCollectWater() { state.water += WATER_PER_COLLECT; },
+  onSelectType(id) { state.selectedType = id; },
 });
 
 // --- Layout: fit design aspect inside usable area (viewport minus insets) ---

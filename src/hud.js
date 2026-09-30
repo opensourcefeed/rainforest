@@ -2,9 +2,9 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, SEED_COST } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes } from './game.js';
 
-export function createHud({ onCollectWater }) {
+export function createHud({ onCollectWater, onSelectType }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -30,10 +30,19 @@ export function createHud({ onCollectWater }) {
   living.className = 'hud-stat hud-stat-living';
   living.innerHTML = `<span class="hud-icon">🌱</span><span class="hud-value" id="hud-living">0</span>`;
 
-  // Persistent one-line reminder of the core action + cost.
+  // Plant-type selector — the chosen type is what a soil tap plants. New tiers
+  // appear here as stages unlock. Click delegation set once.
+  const types = document.createElement('div');
+  types.className = 'hud-types';
+  types.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-type]');
+    if (btn) onSelectType(btn.dataset.type);
+  });
+
+  // Persistent one-line reminder of the core action.
   const hint = document.createElement('div');
   hint.className = 'hud-hint';
-  hint.textContent = `Tap empty soil to plant · −${SEED_COST} 💧`;
+  hint.textContent = 'Tap empty soil to plant · tap locked desert to expand';
 
   const actions = document.createElement('div');
   actions.className = 'hud-actions';
@@ -45,7 +54,7 @@ export function createHud({ onCollectWater }) {
   collect.addEventListener('click', onCollectWater);
   actions.appendChild(collect);
 
-  root.append(stage, eco, water, living, hint, actions);
+  root.append(stage, eco, water, living, types, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');
@@ -62,6 +71,15 @@ export function createHud({ onCollectWater }) {
   let lastRate = null;
   let lastLiving = null;
   let lastStage = -1;
+  let lastTypeCount = 0;
+
+  function rebuildTypes(avail) {
+    types.innerHTML = avail.map((t) => `
+      <button type="button" data-type="${t.id}">
+        <span class="t-name">${t.name}</span><span class="t-cost">${t.cost}💧</span>
+      </button>`).join('');
+    lastTypeCount = avail.length;
+  }
 
   return {
     update(state) {
@@ -89,6 +107,16 @@ export function createHud({ onCollectWater }) {
       bars.soil.style.width = (state.meters.soil * 100).toFixed(1) + '%';
       bars.shade.style.width = (state.meters.shade * 100).toFixed(1) + '%';
       bars.humidity.style.width = (state.meters.humidity * 100).toFixed(1) + '%';
+
+      // Plant-type selector: rebuild when a new tier unlocks, then reflect the
+      // current selection and affordability.
+      const avail = availableTypes(state);
+      if (avail.length !== lastTypeCount) rebuildTypes(avail);
+      for (const btn of types.children) {
+        const t = avail.find((x) => x.id === btn.dataset.type);
+        btn.classList.toggle('sel', btn.dataset.type === state.selectedType);
+        btn.classList.toggle('poor', !!t && state.water < t.cost);
+      }
 
       // Progress to next stage.
       const prog = stageProgress(state);
