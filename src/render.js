@@ -46,34 +46,86 @@ const TUFTS = (() => {
   const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const bandTop = DESIGN.h - CONTROL_BAND;
   const out = [];
-  for (let i = 0; i < 44; i++) {
+  for (let i = 0; i < 90; i++) {
     out.push({
       x: rnd() * DESIGN.w,
       y: HORIZON + 6 + rnd() * (bandTop - HORIZON - 6),
-      s: 4 + rnd() * 5,
-      threshold: rnd(), // this tuft appears once greening passes here
+      s: 5 + rnd() * 5,
+      hue: 96 + rnd() * 24,
+      threshold: rnd() * 0.8, // this tuft appears once the land greens past here
     });
   }
-  return out;
+  // Draw far tufts (higher on screen) first so nearer ones overlap them.
+  return out.sort((a, b) => a.y - b.y);
 })();
 
 function drawTufts(ctx, g) {
   for (const t of TUFTS) {
     if (g <= t.threshold) continue;
-    // Fade each tuft in over the 0.2 of greening after its threshold.
-    const a = Math.min(1, (g - t.threshold) / 0.2);
-    ctx.globalAlpha = a * 0.9;
-    ctx.strokeStyle = '#3f7a2e';
-    ctx.lineWidth = 1.6;
-    ctx.lineCap = 'round';
-    for (const dx of [-2.5, 0, 2.5]) {
+    // Fade each tuft in over the next slice of greening after its threshold.
+    const a = Math.min(1, (g - t.threshold) / 0.15);
+    ctx.globalAlpha = a * 0.85;
+    // A soft filled clump of blades reads as grass rather than a stray speck.
+    ctx.fillStyle = `hsl(${t.hue},45%,38%)`;
+    const scale = 0.6 + 0.4 * a;
+    for (const dx of [-3, 0, 3]) {
+      const h = t.s * scale * (dx === 0 ? 1 : 0.8);
       ctx.beginPath();
-      ctx.moveTo(t.x + dx, t.y);
-      ctx.quadraticCurveTo(t.x + dx + dx * 0.4, t.y - t.s * 0.7, t.x + dx * 1.6, t.y - t.s);
-      ctx.stroke();
+      ctx.moveTo(t.x + dx - 1.4, t.y);
+      ctx.quadraticCurveTo(t.x + dx + dx * 0.5, t.y - h * 0.7, t.x + dx * 1.5, t.y - h);
+      ctx.quadraticCurveTo(t.x + dx + dx * 0.5, t.y - h * 0.7, t.x + dx + 1.4, t.y);
+      ctx.fill();
     }
   }
   ctx.globalAlpha = 1;
+}
+
+// The lone man — a simple recognizable figure planting in the desert.
+function drawFigure(ctx, x, feetY, s = 1) {
+  const hipY = feetY - 13 * s;
+  const shoulderY = feetY - 26 * s;
+  const headY = feetY - 31 * s;
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Legs
+  ctx.strokeStyle = '#3f3320';
+  ctx.lineWidth = 2.6 * s;
+  ctx.beginPath();
+  ctx.moveTo(x, hipY); ctx.lineTo(x - 3.2 * s, feetY);
+  ctx.moveTo(x, hipY); ctx.lineTo(x + 3.2 * s, feetY);
+  ctx.stroke();
+
+  // Torso
+  ctx.strokeStyle = '#7a5230';
+  ctx.lineWidth = 3.4 * s;
+  ctx.beginPath();
+  ctx.moveTo(x, hipY); ctx.lineTo(x, shoulderY);
+  ctx.stroke();
+
+  // Arms — one down toward the ground (planting), one holding a watering can.
+  ctx.strokeStyle = '#7a5230';
+  ctx.lineWidth = 2.2 * s;
+  ctx.beginPath();
+  ctx.moveTo(x, shoulderY + 2 * s); ctx.lineTo(x - 6 * s, shoulderY + 9 * s); // reaching down
+  ctx.moveTo(x, shoulderY + 2 * s); ctx.lineTo(x + 6 * s, shoulderY + 6 * s); // out to the can
+  ctx.stroke();
+
+  // Watering can in the raised hand
+  ctx.fillStyle = '#6f7d86';
+  ctx.fillRect(x + 5 * s, shoulderY + 4 * s, 6 * s, 5 * s);
+  ctx.strokeStyle = '#6f7d86';
+  ctx.lineWidth = 1.4 * s;
+  ctx.beginPath();
+  ctx.moveTo(x + 11 * s, shoulderY + 5 * s); ctx.lineTo(x + 14 * s, shoulderY + 3 * s); // spout
+  ctx.stroke();
+
+  // Head
+  ctx.fillStyle = '#caa06a';
+  ctx.beginPath();
+  ctx.arc(x, headY, 3.6 * s, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 export function renderScene(ctx, state) {
@@ -109,12 +161,8 @@ export function renderScene(ctx, state) {
   // Wildlife returns as the land recovers (fades in past each threshold).
   drawCritters(ctx, avg);
 
-  // Lone figure (placeholder)
-  ctx.fillStyle = '#4a3a24';
-  ctx.fillRect(w * 0.5 - 4, HORIZON - 26, 8, 26);
-  ctx.beginPath();
-  ctx.arc(w * 0.5, HORIZON - 32, 7, 0, Math.PI * 2);
-  ctx.fill();
+  // The lone man, standing on the horizon just left of centre.
+  drawFigure(ctx, w * 0.42, HORIZON, 1.15);
 
   // Planting plots
   const nextUnlock = unlockCost(state);

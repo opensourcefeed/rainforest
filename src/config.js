@@ -3,7 +3,7 @@
 export const DESIGN = { w: 450, h: 975 }; // ~9:19.5 portrait
 export const MAX_DPR = 3; // cap so cheap high-DPI phones don't over-render
 
-export const HORIZON = DESIGN.h * 0.62; // sky/sand boundary
+export const HORIZON = DESIGN.h * 0.46; // sky/sand boundary (more ground for the grid)
 
 // How many plots start unlocked; the rest are bought with water.
 export const STARTER_PLOTS = 4;
