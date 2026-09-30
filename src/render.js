@@ -128,8 +128,9 @@ function drawFigure(ctx, x, feetY, s = 1) {
   ctx.fill();
 }
 
-export function renderScene(ctx, state) {
+export function renderScene(ctx, state, now = 0) {
   const { w, h } = DESIGN;
+  const time = now / 1000;
   const avg = avgMeter(state); // 0 desert .. 1 rainforest
   const col = sceneColors(avg);
 
@@ -140,11 +141,23 @@ export function renderScene(ctx, state) {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, HORIZON);
 
-  // Sun — bright over the desert, dimming as the canopy/humidity build.
-  ctx.globalAlpha = 1 - 0.6 * avg;
+  // Sun — bright over the desert, dimming as the canopy/humidity build, with a
+  // gentle breathing pulse and a soft halo.
+  const sunX = w * 0.74, sunY = h * 0.16;
+  const sunA = 1 - 0.6 * avg;
+  const pulse = 1 + 0.05 * Math.sin(time * 1.4);
+  const rCore = 42 * pulse;
+  const halo = ctx.createRadialGradient(sunX, sunY, rCore * 0.5, sunX, sunY, rCore * 2.1);
+  halo.addColorStop(0, `rgba(255,244,214,${0.5 * sunA})`);
+  halo.addColorStop(1, 'rgba(255,244,214,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, rCore * 2.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = sunA;
   ctx.fillStyle = '#fff4d6';
   ctx.beginPath();
-  ctx.arc(w * 0.74, h * 0.16, 42, 0, Math.PI * 2);
+  ctx.arc(sunX, sunY, rCore, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
@@ -159,7 +172,7 @@ export function renderScene(ctx, state) {
   drawTufts(ctx, avg);
 
   // Wildlife returns as the land recovers (fades in past each threshold).
-  drawCritters(ctx, avg);
+  drawCritters(ctx, avg, time);
 
   // The lone man, standing on the horizon just left of centre.
   drawFigure(ctx, w * 0.42, HORIZON, 1.15);
@@ -213,22 +226,33 @@ export function renderScene(ctx, state) {
   ctx.fillRect(0, bandTop, w, bandH);
 }
 
-// Wildlife that returns as milestones are passed — a living reward.
+// Wildlife that returns as milestones are passed — a living, animated reward.
 const CRITTERS = [
-  { emoji: '🦋', at: 0.42, x: 0.24, y: 0.5 },
-  { emoji: '🐦', at: 0.5, x: 0.68, y: 0.42 },
-  { emoji: '🦋', at: 0.6, x: 0.8, y: 0.55 },
-  { emoji: '🦌', at: 0.72, x: 0.34, y: 0.585 },
-  { emoji: '🐒', at: 0.88, x: 0.6, y: 0.5 },
+  { emoji: '🦋', at: 0.42, x: 0.24, y: 0.42, motion: 'flutter', phase: 0.0, speed: 0 },
+  { emoji: '🐦', at: 0.5, x: 0.68, y: 0.30, motion: 'fly', phase: 1.1, speed: 26 },
+  { emoji: '🦋', at: 0.6, x: 0.8, y: 0.5, motion: 'flutter', phase: 2.3, speed: 0 },
+  { emoji: '🦌', at: 0.72, x: 0.34, y: 0.59, motion: 'bob', phase: 0.7, speed: 0 },
+  { emoji: '🐒', at: 0.88, x: 0.6, y: 0.5, motion: 'bob', phase: 1.8, speed: 0 },
 ];
-function drawCritters(ctx, avg) {
+function drawCritters(ctx, avg, time) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '18px system-ui, sans-serif';
   for (const c of CRITTERS) {
     if (avg <= c.at) continue;
+    let x = DESIGN.w * c.x;
+    let y = DESIGN.h * c.y;
+    if (c.motion === 'flutter') {
+      x += Math.sin(time * 3 + c.phase) * 11;
+      y += Math.sin(time * 5 + c.phase) * 7;
+    } else if (c.motion === 'fly') {
+      x = ((DESIGN.w * c.x + time * c.speed) % (DESIGN.w + 40)) - 20; // drift + wrap
+      y += Math.sin(time * 2 + c.phase) * 6;
+    } else {
+      y += Math.sin(time * 1.6 + c.phase) * 3; // gentle bob
+    }
     ctx.globalAlpha = Math.min(1, (avg - c.at) / 0.08);
-    ctx.fillText(c.emoji, DESIGN.w * c.x, DESIGN.h * c.y);
+    ctx.fillText(c.emoji, x, y);
   }
   ctx.globalAlpha = 1;
 }

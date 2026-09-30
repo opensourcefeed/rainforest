@@ -104,7 +104,7 @@ function frame(now) {
     update(STEP);
     acc -= STEP;
   }
-  renderScene(ctx, state);
+  renderScene(ctx, state, now);
   hud.update(state);
   updateDebug(now);
   requestAnimationFrame(frame);
