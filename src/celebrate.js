@@ -11,6 +11,15 @@ const FLAVOR = {
 
 const CONFETTI_COLORS = ['#f9c74f', '#90be6d', '#43aa8b', '#4d96ff', '#f94144', '#f3722c'];
 
+// A gentle real-world nudge shown on each stage — this forest is a game, but a
+// real one grows the same way. Keyed to the stage so it's consistent, not preachy.
+const REAL_LINES = {
+  Scrubland: 'A real forest grows the same way — one tree at a time. Plant one this week.',
+  Grassland: 'Somewhere near you, real ground is waiting for a tree. Will you plant it?',
+  'Dry woodland': 'Every tree you plant in real life will outlive this whole game. 🌍',
+  Rainforest: 'You brought this forest back. Now go plant a real tree — even one matters.',
+};
+
 function confetti() {
   let html = '';
   for (let i = 0; i < 16; i++) {
@@ -34,6 +43,7 @@ export function createCelebration({ onContinue }) {
   return {
     show(milestone) {
       const f = FLAVOR[milestone.name] || { emoji: '🌱', line: 'The land grows greener.' };
+      const real = REAL_LINES[milestone.name] || 'Plant a real tree today — it outlives every game.';
       overlay.innerHTML = `
         <div class="confetti">${confetti()}</div>
         <div class="celebrate-card">
@@ -42,6 +52,7 @@ export function createCelebration({ onContinue }) {
           <h2 class="celebrate-title">${milestone.name}</h2>
           <p class="celebrate-line">${f.line}</p>
           <div class="celebrate-reward">Reward: +${milestone.bonus} 💧</div>
+          <div class="celebrate-real"><span>🌱 In the real world</span>${real}</div>
           <button type="button" class="celebrate-btn">Continue</button>
         </div>`;
       overlay.hidden = false;
