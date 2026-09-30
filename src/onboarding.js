@@ -18,8 +18,9 @@ const PANELS = [
   'Grain by grain, he is bringing a forest back to life.\nNow the seeds are in your hands.',
 ];
 
-export function initOnboarding() {
-  if (alreadySeen()) return;
+// Shows the story (once, or again when `force`). Returns true if it showed.
+export function initOnboarding(force = false) {
+  if (!force && alreadySeen()) return false;
 
   const overlay = document.createElement('div');
   overlay.className = 'story';
@@ -75,4 +76,5 @@ export function initOnboarding() {
   nextBtn.addEventListener('click', () => go(i + 1));
   overlay.querySelector('.story-skip').addEventListener('click', finish);
   go(0);
+  return true;
 }

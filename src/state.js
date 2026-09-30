@@ -21,7 +21,7 @@ export function createState() {
     meters: { soil: 0, shade: 0, humidity: 0 },
     selectedType: 'seed', // which plant type the next tap plants
     upgrades: {}, // permanent upgrade levels bought with water (see game.UPGRADES)
-    stats: { planted: 0, collected: 0, unlocked: 0, upgraded: 0 }, // cumulative, for quests
+    stats: { planted: 0, collected: 0, unlocked: 0, upgraded: 0, replaced: 0 }, // cumulative, for quests
     quests: [], // active quest instances (assigned by game.initQuests)
     legacy: 0, // permanent prestige currency (survives "plant a new forest")
     forests: 0, // how many forests grown to completion

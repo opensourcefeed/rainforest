@@ -96,7 +96,25 @@ export const QUEST_POOL = [
   { key: 'unlock', abs: true, metric: (s) => unlockedCount(s), goals: [8, 14, 20], reward: (g) => g * 4, text: (g) => `Expand your land to ${g} plots` },
   { key: 'collect', metric: (s) => s.stats.collected, goals: [10, 25, 50], reward: (g) => g * 2, text: (g) => `Collect water ${g} times` },
   { key: 'upgrade', metric: (s) => s.stats.upgraded, goals: [1, 3, 6], reward: (g) => g * 25, text: (g) => `Buy ${g} upgrade${g > 1 ? 's' : ''}` },
+  { key: 'mature', abs: true, metric: (s) => matureCount(s), goals: [5, 10, 18], reward: (g) => g * 6, text: (g) => `Grow ${g} plants to full size` },
+  { key: 'bigtrees', abs: true, metric: (s) => countTier(s, 3), goals: [1, 3, 6], reward: (g) => g * 30, text: (g) => `Have ${g} tree${g > 1 ? 's' : ''} or canopies growing` },
+  { key: 'replace', metric: (s) => s.stats.replaced || 0, goals: [2, 5, 10], reward: (g) => g * 12, text: (g) => `Upgrade ${g} plants to a better kind` },
 ];
+
+// Fully-grown living plants.
+export function matureCount(state) {
+  let n = 0;
+  for (const p of state.plots) if (p.plant && p.plant.status === 'alive' && p.plant.growth >= 1) n++;
+  return n;
+}
+// Living plants at or above a tier index (0 seed .. 4 canopy).
+export function countTier(state, minTier) {
+  let n = 0;
+  for (const p of state.plots) {
+    if (p.plant && p.plant.status === 'alive' && tierOf(p.plant.typeId) >= minTier) n++;
+  }
+  return n;
+}
 
 function makeQuest(tmpl, state) {
   const goal = tmpl.goals[Math.floor(Math.random() * tmpl.goals.length)];
@@ -364,7 +382,7 @@ export function upgradePlant(state, index) {
   }
   state.water -= cost;
   plot.plant = { status: 'alive', age: 0, growth: 0.15, typeId: type.id };
-  if (state.stats) state.stats.planted++;
+  if (state.stats) { state.stats.planted++; state.stats.replaced = (state.stats.replaced || 0) + 1; }
   pushFx(state, plot.col, plot.row, 'survive');
   return true;
 }

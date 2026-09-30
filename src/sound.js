@@ -2,9 +2,16 @@
 // volume tracks rain intensity, plus short synthesized SFX. Muted state persists.
 let ctx = null, master = null, rainGain = null;
 let enabled = true;
+let volume = 0.55;
 const MUTE_KEY = 'rainforest.muted.v1';
+const VOL_KEY = 'rainforest.volume.v1';
 
-try { enabled = localStorage.getItem(MUTE_KEY) !== '1'; } catch { /* default on */ }
+try {
+  enabled = localStorage.getItem(MUTE_KEY) !== '1';
+  const v = parseFloat(localStorage.getItem(VOL_KEY));
+  if (!Number.isNaN(v)) volume = Math.max(0, Math.min(1, v));
+} catch { /* defaults */ }
+const level = () => (enabled ? volume : 0);
 
 function noiseSource() {
   const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -20,7 +27,7 @@ export function initAudio() {
   if (ctx) return;
   try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
   master = ctx.createGain();
-  master.gain.value = enabled ? 0.55 : 0;
+  master.gain.value = level();
   master.connect(ctx.destination);
 
   const noise = noiseSource();
@@ -67,7 +74,13 @@ export const sfx = {
 export function toggleMuted() {
   enabled = !enabled;
   try { localStorage.setItem(MUTE_KEY, enabled ? '0' : '1'); } catch { /* ignore */ }
-  if (master && ctx) master.gain.setTargetAtTime(enabled ? 0.55 : 0, ctx.currentTime, 0.1);
+  if (master && ctx) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.1);
   return enabled;
 }
 export function isEnabled() { return enabled; }
+export function getVolume() { return volume; }
+export function setVolume(v) {
+  volume = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem(VOL_KEY, String(volume)); } catch { /* ignore */ }
+  if (master && ctx) master.gain.setTargetAtTime(level(), ctx.currentTime, 0.05);
+}

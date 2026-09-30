@@ -4,7 +4,7 @@
 
 import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable } from './game.js';
 
-export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onToggleMute, soundEnabled }) {
+export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -36,12 +36,12 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   living.className = 'hud-stat hud-stat-living';
   living.innerHTML = `<span class="hud-icon">🌱</span><span class="hud-value" id="hud-living">0</span>`;
 
-  const sound = document.createElement('button');
-  sound.className = 'hud-sound';
-  sound.type = 'button';
-  sound.setAttribute('aria-label', 'Toggle sound');
-  sound.textContent = soundEnabled ? '🔊' : '🔇';
-  sound.addEventListener('click', () => { sound.textContent = onToggleMute() ? '🔊' : '🔇'; });
+  const settingsBtn = document.createElement('button');
+  settingsBtn.className = 'hud-sound';
+  settingsBtn.type = 'button';
+  settingsBtn.setAttribute('aria-label', 'Settings');
+  settingsBtn.textContent = '⚙️';
+  settingsBtn.addEventListener('click', onOpenSettings);
 
   // Plant-type selector — the chosen type is what a soil tap plants. New tiers
   // appear here as stages unlock. Click delegation set once.
@@ -83,7 +83,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
 
   actions.append(collect, shopBtn, goalsBtn);
 
-  root.append(stage, rain, eco, water, living, sound, types, hint, actions);
+  root.append(stage, rain, eco, water, living, settingsBtn, types, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');

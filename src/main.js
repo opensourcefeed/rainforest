@@ -9,8 +9,9 @@ import { createHud } from './hud.js';
 import { createShop } from './shop.js';
 import { createQuests } from './quests.js';
 import { createPrestige } from './prestige.js';
-import { initAudio, setRain, sfx, toggleMuted, isEnabled } from './sound.js';
-import { loadGame, saveGame } from './save.js';
+import { initAudio, setRain, sfx } from './sound.js';
+import { loadGame, saveGame, clearSave } from './save.js';
+import { createSettings } from './settings.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
 import { createCelebration } from './celebrate.js';
@@ -45,17 +46,24 @@ function manRest() {
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
 const prestige = createPrestige(state, () => {
-  if (doPrestige(state)) { sfx.fanfare(); saveGame(state); }
+  if (doPrestige(state)) { sfx.fanfare(); save(); }
 });
 const shop = createShop(state, () => sfx.upgrade(), () => prestige.show());
 const quests = createQuests(state, () => sfx.upgrade());
+// Saving is suspended while a reset is in flight, so the unload handlers can't
+// write the old forest back after we clear it.
+let resetting = false;
+const save = () => { if (!resetting) saveGame(state); };
+const settings = createSettings({
+  onReplayStory() { initOnboarding(true); },
+  onReset() { resetting = true; clearSave(); location.reload(); },
+});
 const hud = createHud({
   onCollectWater() { state.water += collectAmount(state); if (state.stats) state.stats.collected++; sfx.collect(); },
   onSelectType(id) { state.selectedType = id; },
   onOpenShop() { shop.open(); },
   onOpenQuests() { quests.open(); },
-  onToggleMute() { return toggleMuted(); },
-  soundEnabled: isEnabled(),
+  onOpenSettings() { settings.open(); },
   // Selector height changes when a new tier unlocks; re-measure the reserve.
   onLayoutChange() { scheduleLayout(); },
 });
@@ -244,12 +252,29 @@ if (window.visualViewport) {
 
 // Persist periodically and whenever the app is backgrounded/closed, so the
 // saved timestamp is fresh for offline-progress on the next resume.
-setInterval(() => saveGame(state), 5000);
-addEventListener('visibilitychange', () => { if (document.hidden) saveGame(state); });
-addEventListener('pagehide', () => saveGame(state));
+setInterval(save, 5000);
+addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+addEventListener('pagehide', save);
 
 hud.update(state); // build the selector so the first layout can measure it
 layout();
 requestAnimationFrame(frame); // game renders behind the overlays immediately
 // Loading animation (~2.5s), then the first-run story (once) or straight to play.
-showLoader(2500, () => { initOnboarding(); });
+showLoader(2500, () => {
+  // First run: the story. Returning after a while: a short "while away" note.
+  if (!initOnboarding() && (state.offlineSeconds || 0) > 60) {
+    const mins = Math.round(state.offlineSeconds / 60);
+    const away = mins < 60 ? `${mins} min` : `${Math.round(mins / 60)} h`;
+    showToast(`While you were away (${away}) your forest grew · +${Math.floor(state.offlineGain || 0)} 💧`);
+  }
+});
+
+// A brief message that fades in and out at the top of the screen.
+function showToast(text) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('out'), 4200);
+  setTimeout(() => el.remove(), 4800);
+}

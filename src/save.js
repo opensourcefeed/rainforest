@@ -73,7 +73,9 @@ export function loadGame() {
 
     const elapsed = Math.max(0, (Date.now() - (data.t || Date.now())) / 1000);
     const capped = Math.min(elapsed, OFFLINE_CAP_SEC);
+    const waterBefore = state.water;
     applyOffline(state, capped);
+    state.offlineGain = Math.max(0, state.water - waterBefore); // for the while-away note
     state.offlineSeconds = capped; // for the boot screen "while away" note (not persisted)
     state.milestone = null; // don't pop a banner from offline catch-up
     state.events = []; // don't play a burst of sounds from offline catch-up
