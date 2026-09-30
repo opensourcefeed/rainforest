@@ -22,6 +22,8 @@ export function saveGame(state) {
       upgrades: state.upgrades,
       stats: state.stats,
       quests: state.quests,
+      legacy: state.legacy,
+      forests: state.forests,
       stageReached: state.stageReached,
       plots: state.plots.map((p) => ({
         col: p.col, row: p.row, unlocked: p.unlocked, planted: p.planted, plant: p.plant,
@@ -53,6 +55,8 @@ export function loadGame() {
     if (data.upgrades && typeof data.upgrades === 'object') state.upgrades = data.upgrades;
     if (data.stats && typeof data.stats === 'object') Object.assign(state.stats, data.stats);
     if (Array.isArray(data.quests)) state.quests = data.quests;
+    if (typeof data.legacy === 'number') state.legacy = data.legacy;
+    if (typeof data.forests === 'number') state.forests = data.forests;
     if (Array.isArray(data.plots) && data.plots.length === state.plots.length) {
       state.plots = data.plots;
       // Migrate pre-expansion saves: no `unlocked` field means every plot was

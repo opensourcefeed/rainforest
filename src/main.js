@@ -3,11 +3,12 @@
 import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt } from './state.js';
 import { computeLayout, L } from './layout.js';
-import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount, initQuests } from './game.js';
+import { plantSeed, unlockPlot, updateWorld, survivalChance, collectAmount, initQuests, doPrestige } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
 import { createQuests } from './quests.js';
+import { createPrestige } from './prestige.js';
 import { initAudio, setRain, sfx, toggleMuted, isEnabled } from './sound.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
@@ -30,7 +31,10 @@ initQuests(state); // assign starting goals if none
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
-const shop = createShop(state, () => sfx.upgrade());
+const prestige = createPrestige(state, () => {
+  if (doPrestige(state)) { sfx.fanfare(); saveGame(state); }
+});
+const shop = createShop(state, () => sfx.upgrade(), () => prestige.show());
 const quests = createQuests(state, () => sfx.upgrade());
 const hud = createHud({
   onCollectWater() { state.water += collectAmount(state); if (state.stats) state.stats.collected++; sfx.collect(); },

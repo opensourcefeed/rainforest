@@ -26,6 +26,38 @@ export function selectedType(state) {
   return TYPE_BY_ID[state.selectedType] || PLANT_TYPES[0];
 }
 
+// --- Prestige: "plant a new forest" for a permanent legacy boost -----------
+// Legacy persists across forests and speeds every future one, so completing a
+// forest is worth starting over — the long-term loop (and the real-tree theme).
+export function legacyBonus(state) {
+  return 1 + (state.legacy || 0) * 0.03; // +3% growth/yield per legacy
+}
+export function canPrestige(state) {
+  return state.stageReached >= 4; // reached Rainforest
+}
+export function prestigeGain(state) {
+  return Math.max(1, Math.round(state.stageReached * 2 + livingCount(state) * 0.3 + avgMeter(state) * 4));
+}
+export function doPrestige(state) {
+  if (!canPrestige(state)) return 0;
+  const gain = prestigeGain(state);
+  state.legacy = (state.legacy || 0) + gain;
+  state.forests = (state.forests || 0) + 1;
+  // Reset the run (legacy, forests, lifetime stats are kept).
+  state.water = START_WATER;
+  state.meters = { soil: 0, shade: 0, humidity: 0 };
+  state.selectedType = 'seed';
+  state.stageReached = 0;
+  state.milestone = null;
+  state.rain = { unlocked: false, active: false, timer: 0, intensity: 0 };
+  state.upgrades = {};
+  state.fx = [];
+  state.plots.forEach((p, i) => { p.unlocked = i < STARTER_PLOTS; p.planted = false; p.plant = null; });
+  state.quests = [];
+  initQuests(state);
+  return gain;
+}
+
 // --- Upgrades: permanent boosts bought with water (the main water sink) -----
 export const UPGRADES = [
   { id: 'survival', name: 'Fertile Soil', icon: '🌱', desc: 'Seeds survive more often', base: 25, growth: 1.8, max: 8 },
@@ -211,7 +243,7 @@ function updateRain(state, dt) {
 export function waterRate(state) {
   let rate = WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03;
   const humidity = state.meters.humidity;
-  const yieldMulUp = 1 + upgradeLevel(state, 'yield') * 0.15;
+  const yieldMulUp = (1 + upgradeLevel(state, 'yield') * 0.15) * legacyBonus(state);
   for (const plot of state.plots) {
     const p = plot.plant;
     if (p && p.status === 'alive') {
@@ -305,8 +337,9 @@ export function plantSeed(state, index) {
 // Advance every plant and let the living ones enrich the environment.
 export function updateWorld(state, dt) {
   const m = state.meters;
+  const lb = legacyBonus(state);
   const growthMul = 1 + upgradeLevel(state, 'growth') * 0.12;
-  const yieldMulUp = 1 + upgradeLevel(state, 'yield') * 0.15;
+  const yieldMulUp = (1 + upgradeLevel(state, 'yield') * 0.15) * lb;
   state.water += (WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03) * dt; // trickle
 
   // Age and expire transient effects.
@@ -343,7 +376,7 @@ export function updateWorld(state, dt) {
       p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul);
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
-      const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul;
+      const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb;
       m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 2);
       m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 2);
       m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 2);

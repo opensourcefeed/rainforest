@@ -142,3 +142,14 @@ rain, animals, real art) after migrating to Vite for the Capacitor wrap.
       panels, dots, skip, "Begin your forest". Shown once.
 - [x] **S41 — Real-tree motivation.** Stage-celebration modal now nudges the player to plant a
       real tree (stage-specific line).
+
+### Engagement systems (endgame + activities)
+- [x] **S42 — Upgrades shop.** Six water-bought permanent upgrades (survival/growth/yield/cost/
+      rain/collect). The core water sink.
+- [x] **S43 — Ambient sound + SFX.** Procedural Web Audio (rain ambience + action SFX), mute toggle.
+- [x] **S44 — Quests/goals.** Three rotating objectives with rewards + claimable indicator.
+- [x] **S45 — Prestige ("Plant a New Forest").** After Rainforest, reset for permanent legacy
+      (+3%/pt growth & yield). Keeps legacy/forests/lifetime stats; ties to the real-tree theme.
+
+Phase 1 core loop is now full: plant → heal → expand → upgrade → rain → complete → prestige,
+with quests for direction and sound for feel. Remaining Phase 1: real art, then Vite/Capacitor.

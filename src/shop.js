@@ -1,7 +1,8 @@
-// Upgrades shop overlay — spend water on permanent boosts.
-import { UPGRADES, upgradeLevel, upgradeCost, buyUpgrade } from './game.js';
+// Upgrades shop overlay — spend water on permanent boosts, and (once eligible)
+// "plant a new forest" for permanent legacy.
+import { UPGRADES, upgradeLevel, upgradeCost, buyUpgrade, canPrestige, prestigeGain, legacyBonus } from './game.js';
 
-export function createShop(state, onBuy) {
+export function createShop(state, onBuy, onPrestige) {
   const overlay = document.createElement('div');
   overlay.className = 'shop';
   overlay.hidden = true;
@@ -10,6 +11,7 @@ export function createShop(state, onBuy) {
       <div class="shop-head">
         <h2>Upgrades</h2>
         <div class="shop-water">💧 <span id="shop-water">0</span></div>
+        <div class="shop-legacy" title="Legacy: permanent growth &amp; yield boost">🌿 <span id="shop-legacy">0</span></div>
         <button type="button" class="shop-close" aria-label="Close">✕</button>
       </div>
       <div class="shop-list"></div>
@@ -18,13 +20,23 @@ export function createShop(state, onBuy) {
 
   const list = overlay.querySelector('.shop-list');
   const waterEl = overlay.querySelector('#shop-water');
+  const legacyEl = overlay.querySelector('#shop-legacy');
   const close = () => { overlay.hidden = true; };
   overlay.querySelector('.shop-close').addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
   function render() {
     waterEl.textContent = Math.floor(state.water);
-    list.innerHTML = UPGRADES.map((u) => {
+    legacyEl.textContent = state.legacy || 0;
+
+    const prestigeCard = canPrestige(state) ? `
+      <button type="button" class="prestige-card-btn" id="shop-prestige">
+        <span class="pc-ic">🌳</span>
+        <span class="pc-info"><b>Plant a New Forest</b><small>Reset for +${prestigeGain(state)} 🌿 legacy (permanent boost)</small></span>
+        <span class="pc-go">→</span>
+      </button>` : '';
+
+    list.innerHTML = prestigeCard + UPGRADES.map((u) => {
       const lvl = upgradeLevel(state, u.id);
       const maxed = lvl >= u.max;
       const cost = upgradeCost(state, u.id);
@@ -46,6 +58,7 @@ export function createShop(state, onBuy) {
   }
 
   list.addEventListener('click', (e) => {
+    if (e.target.closest('#shop-prestige')) { close(); if (onPrestige) onPrestige(); return; }
     const b = e.target.closest('[data-id]');
     if (b && buyUpgrade(state, b.dataset.id)) { if (onBuy) onBuy(); render(); }
   });

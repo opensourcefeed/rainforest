@@ -23,6 +23,8 @@ export function createState() {
     upgrades: {}, // permanent upgrade levels bought with water (see game.UPGRADES)
     stats: { planted: 0, collected: 0, unlocked: 0, upgraded: 0 }, // cumulative, for quests
     quests: [], // active quest instances (assigned by game.initQuests)
+    legacy: 0, // permanent prestige currency (survives "plant a new forest")
+    forests: 0, // how many forests grown to completion
     stageReached: 0, // highest stage index rewarded (so bonuses fire once)
     milestone: null, // transient {name, bonus, age} for the reward banner
     // Rain: unlocks once humidity is high enough, then cycles. `intensity` eases
