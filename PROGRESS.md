@@ -132,3 +132,13 @@ rain, animals, real art) after migrating to Vite for the Capacitor wrap.
 - S8 ships the *visible* stage transition (scene greening + stage banner). Actual
   distinct scrubland seed types (cactus/acacia/date palm) are deferred to Phase 1;
   Phase 0 only needs to prove the progression feels good.
+
+### Weather + intro + real-tree pass
+- [x] **S38 — Gradual rain + real clouds.** Eased rain intensity (build/wean over ~10s) drives
+      light, density, clouds, yield; puffy multi-lobe clouds drift across and off the edges.
+- [x] **S39 — Loading animation.** ~2.5s animated loader (growing sprout + progress) on every
+      launch, then story (first run) or straight to play.
+- [x] **S40 — Premium first-run story.** Evolving desert→forest scene with fading narration
+      panels, dots, skip, "Begin your forest". Shown once.
+- [x] **S41 — Real-tree motivation.** Stage-celebration modal now nudges the player to plant a
+      real tree (stage-specific line).
