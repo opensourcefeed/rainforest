@@ -8,7 +8,7 @@ import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { loadGame, saveGame } from './save.js';
 import { initOnboarding } from './onboarding.js';
-import { initBoot } from './boot.js';
+import { showLoader } from './loader.js';
 import { createCelebration } from './celebrate.js';
 
 const canvas = document.getElementById('game');
@@ -173,7 +173,6 @@ addEventListener('pagehide', () => saveGame(state));
 
 hud.update(state); // build the selector so the first layout can measure it
 layout();
-// Title screen first; on Start, show the first-run explainer (once). The game
-// loop runs behind the overlays so the desert is already rendered.
-initBoot(state, initOnboarding);
-requestAnimationFrame(frame);
+requestAnimationFrame(frame); // game renders behind the overlays immediately
+// Loading animation (~2.5s), then the first-run story (once) or straight to play.
+showLoader(2500, () => { initOnboarding(); });

@@ -307,6 +307,59 @@ html, body {
 }
 .hud-btn:active { transform: translateY(1px); filter: brightness(0.95); }
 
+/* --- Loading screen ----------------------------------------------------- */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 24px;
+  background: linear-gradient(180deg, #a9cbe0 0%, #e7d6a8 58%, #c69a5b 100%);
+  transition: opacity 0.48s ease;
+}
+.loader-out { opacity: 0; pointer-events: none; }
+.loader-scene { position: relative; width: 160px; height: 120px; margin-bottom: 8px; }
+.loader-sun {
+  position: absolute; top: 4px; right: 18px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #fff3cf; box-shadow: 0 0 26px 10px rgba(255, 243, 207, 0.7);
+  animation: loaderSun 3s ease-in-out infinite;
+}
+@keyframes loaderSun { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.loader-mound {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: 120px; height: 34px;
+  background: #b98a50; border-radius: 60px 60px 0 0;
+}
+.loader-plant { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); }
+.loader-plant .stem {
+  position: absolute; bottom: 0; left: -1.5px; width: 3px; height: 6px;
+  background: #3f8f3a; border-radius: 2px; transform-origin: bottom;
+  animation: loaderStem 1.6s ease-out forwards;
+}
+.loader-plant .leaf {
+  position: absolute; bottom: 20px; width: 12px; height: 8px;
+  background: #4faf47; border-radius: 0 80% 0 80%; opacity: 0;
+  animation: loaderLeaf 0.7s ease-out forwards;
+}
+.loader-plant .leaf.l { left: -12px; transform: scaleX(-1); animation-delay: 1.2s; }
+.loader-plant .leaf.r { left: 0; animation-delay: 1.45s; }
+@keyframes loaderStem { from { height: 6px; } to { height: 34px; } }
+@keyframes loaderLeaf { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+.loader-plant .leaf.l { animation-name: loaderLeafL; }
+@keyframes loaderLeafL { from { opacity: 0; transform: scaleX(-1) scale(0.2); } to { opacity: 1; transform: scaleX(-1) scale(1); } }
+.loader-title { font-size: 30px; font-weight: 800; color: #26331d; letter-spacing: 0.5px; }
+.loader-sub { font-size: 13px; font-weight: 600; color: #4a5a33; opacity: 0.85; }
+.loader-bar {
+  margin-top: 16px; width: 180px; max-width: 60%; height: 6px;
+  background: rgba(0, 0, 0, 0.16); border-radius: 999px; overflow: hidden;
+}
+.loader-bar > i { display: block; width: 0; height: 100%; background: #3f8f3a; border-radius: 999px; }
+
 /* --- Title / boot screen ------------------------------------------------ */
 .boot {
   position: fixed;
