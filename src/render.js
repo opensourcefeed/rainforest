@@ -109,9 +109,10 @@ function drawTufts(ctx, w, horizonY, h, g) {
   }
 }
 
-// The sun, with halo and gentle pulse, at (sx,sy).
-function drawSun(ctx, sx, sy, avg, time) {
-  const sunA = 1 - 0.6 * avg;
+// The sun, with halo and gentle pulse, at (sx,sy). `dim` fades it (e.g. rain).
+function drawSun(ctx, sx, sy, avg, time, dim = 1) {
+  const sunA = (1 - 0.6 * avg) * dim;
+  if (sunA <= 0.02) return;
   const rCore = 42 * (1 + 0.05 * Math.sin(time * 1.4));
   const halo = ctx.createRadialGradient(sx, sy, rCore * 0.5, sx, sy, rCore * 2.1);
   halo.addColorStop(0, `rgba(255,244,214,${0.5 * sunA})`);
@@ -196,12 +197,13 @@ export function renderBackdrop(ctx, state, now = 0) {
   ctx.fillStyle = gnd;
   ctx.fillRect(0, hy, w, h - hy);
 
-  drawSun(ctx, w * 0.74, hy * 0.42, avg, time);
+  const raining = !!(state.rain && state.rain.active);
+  drawSun(ctx, w * 0.74, hy * 0.42, avg, time, raining ? 0.28 : 1);
   drawTufts(ctx, w, hy, h, avg);
   drawCritters(ctx, w, hy, h, avg, time);
 
-  if (state.rain && state.rain.active) {
-    ctx.fillStyle = 'rgba(40, 55, 70, 0.14)';
+  if (raining) {
+    ctx.fillStyle = 'rgba(38, 52, 66, 0.22)'; // overcast mood
     ctx.fillRect(0, 0, w, h);
     drawClouds(ctx, w, time);
     drawRain(ctx, w, h, time);
@@ -278,24 +280,29 @@ export function renderScene(ctx, state, now = 0) {
 
 // Animated rain streaks falling across a region.
 function drawRain(ctx, w, h, time, topY = 0) {
-  ctx.strokeStyle = 'rgba(185, 208, 228, 0.5)';
-  ctx.lineWidth = 1.3;
-  const N = 70, speed = 720, span = h - topY + 30;
+  ctx.strokeStyle = 'rgba(190, 212, 232, 0.55)';
+  ctx.lineWidth = 1.4;
+  // Density scales with area so it reads as rain on any screen size.
+  const N = Math.max(40, Math.min(500, Math.round((w * (h - topY)) / 5200)));
+  const speed = 780, span = h - topY + 30;
   for (let i = 0; i < N; i++) {
     const x = (i * 89.3) % w;
     const y = topY + ((i * 57 + time * speed) % span);
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x - 4, y + 11);
+    ctx.lineTo(x - 4, y + 12);
     ctx.stroke();
   }
 }
 
-// Soft grey rain clouds drifting across the upper sky.
+// Soft grey rain clouds drifting across the upper sky, filling the width.
 function drawClouds(ctx, w, time) {
-  ctx.fillStyle = 'rgba(96, 106, 116, 0.55)';
-  for (const [fx, cw, cy] of [[0.2, 58, 58], [0.55, 84, 44], [0.82, 48, 74]]) {
-    const x = ((fx * w + time * 11) % (w + 140)) - 70;
+  ctx.fillStyle = 'rgba(92, 102, 112, 0.6)';
+  const n = Math.max(3, Math.round(w / 240));
+  for (let k = 0; k < n; k++) {
+    const cw = 46 + (k % 3) * 22;
+    const cy = 38 + (k % 2) * 34;
+    const x = (((k + 0.3) / n * w + time * 11) % (w + 160)) - 80;
     ctx.beginPath(); ctx.ellipse(x, cy, cw, cw * 0.5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x + cw * 0.6, cy + 6, cw * 0.7, cw * 0.4, 0, 0, Math.PI * 2); ctx.fill();
   }
@@ -312,9 +319,9 @@ const CRITTERS = [
   { e: '🐦', at: 0.5, fx: 0.3, sky: 0.3, m: 'fly', ph: 1.1, sp: 24 },
   { e: '🐦', at: 0.6, fx: 0.7, sky: 0.2, m: 'fly', ph: 0.4, sp: 34 },
   { e: '🦌', at: 0.72, fx: 0.14, ground: 0.5, m: 'bob', ph: 0.7 },
-  { e: '🦌', at: 0.76, fx: 0.82, ground: 0.66, m: 'bob', ph: 1.2 },
-  { e: '🐒', at: 0.88, fx: 0.55, ground: 0.38, m: 'bob', ph: 1.8 },
-  { e: '🐒', at: 0.9, fx: 0.9, ground: 0.5, m: 'bob', ph: 2.6 },
+  { e: '🐇', at: 0.76, fx: 0.82, ground: 0.66, m: 'bob', ph: 1.2 },
+  { e: '🦊', at: 0.88, fx: 0.55, ground: 0.38, m: 'bob', ph: 1.8 },
+  { e: '🦌', at: 0.9, fx: 0.9, ground: 0.5, m: 'bob', ph: 2.6 },
 ];
 function drawCritters(ctx, w, horizonY, h, avg, time) {
   ctx.textAlign = 'center';
@@ -332,7 +339,9 @@ function drawCritters(ctx, w, horizonY, h, avg, time) {
       x = ((c.fx * w + time * c.sp) % (w + 40)) - 20; // drift + wrap
       y += Math.sin(time * 2 + c.ph) * 6;
     } else {
-      y += Math.sin(time * 1.6 + c.ph) * 2.5; // gentle bob
+      // Slow roaming wander + a gentle bob, so they walk the land.
+      x += Math.sin(time * 0.22 + c.ph) * 42 + Math.sin(time * 0.1 + c.ph * 1.7) * 18;
+      y += Math.sin(time * 1.6 + c.ph) * 2.5;
     }
     ctx.globalAlpha = Math.min(1, (avg - c.at) / 0.08);
     ctx.fillText(c.e, x, y);
