@@ -4,7 +4,7 @@
 
 import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable } from './game.js';
 
-export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings }) {
+export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings, onOpenGrove }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -42,6 +42,13 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   settingsBtn.setAttribute('aria-label', 'Settings');
   settingsBtn.textContent = '⚙️';
   settingsBtn.addEventListener('click', onOpenSettings);
+
+  const groveBtn = document.createElement('button');
+  groveBtn.className = 'hud-sound hud-grove';
+  groveBtn.type = 'button';
+  groveBtn.setAttribute('aria-label', 'The Real Grove');
+  groveBtn.textContent = '🌍';
+  groveBtn.addEventListener('click', onOpenGrove);
 
   // Plant-type selector — the chosen type is what a soil tap plants. New tiers
   // appear here as stages unlock. Click delegation set once.
@@ -83,7 +90,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
 
   actions.append(collect, shopBtn, goalsBtn);
 
-  root.append(stage, rain, eco, water, living, settingsBtn, types, hint, actions);
+  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, types, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');

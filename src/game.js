@@ -58,6 +58,24 @@ export function doPrestige(state) {
   return gain;
 }
 
+// --- Daily gift: a reason to come back each day --------------------------
+// Consecutive days grow a streak; the gift scales with current income so it
+// stays meaningful late in the game. Dates are local 'YYYY-MM-DD' strings.
+export function claimDaily(state, today, yesterday) {
+  const d = state.daily || (state.daily = { last: null, streak: 0 });
+  if (d.last === today) return null;
+  d.streak = d.last === yesterday ? d.streak + 1 : 1;
+  d.last = today;
+  const base = Math.max(25, Math.round(waterRate(state) * 60));
+  const gift = Math.round(base * (1 + 0.15 * Math.min(d.streak - 1, 6)));
+  state.water += gift;
+  return { streak: d.streak, gift };
+}
+// First run: start the streak today without a gift (the story is showing).
+export function markDailyStart(state, today) {
+  state.daily = { last: today, streak: 1 };
+}
+
 // --- Upgrades: permanent boosts bought with water (the main water sink) -----
 export const UPGRADES = [
   { id: 'survival', name: 'Fertile Soil', icon: '🌱', desc: 'Seeds survive more often', base: 25, growth: 1.8, max: 8 },

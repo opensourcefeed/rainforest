@@ -28,3 +28,8 @@ export const GRID = {
   gutter: 14, // space between plots
   sideMargin: 24, // left/right margin of the whole grid
 };
+
+// Real Grove data (real trees planted by the developer). Published next to the
+// game, so it can be updated without an app release. For the Android build,
+// switch to the absolute URL of the published file.
+export const GROVE_URL = 'grove.json';

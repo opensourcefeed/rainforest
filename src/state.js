@@ -25,6 +25,7 @@ export function createState() {
     quests: [], // active quest instances (assigned by game.initQuests)
     legacy: 0, // permanent prestige currency (survives "plant a new forest")
     forests: 0, // how many forests grown to completion
+    daily: { last: null, streak: 0 }, // daily gift streak (local dates)
     stageReached: 0, // highest stage index rewarded (so bonuses fire once)
     milestone: null, // transient {name, bonus, age} for the reward banner
     // Rain: unlocks once humidity is high enough, then cycles. `intensity` eases

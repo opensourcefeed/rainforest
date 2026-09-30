@@ -738,3 +738,27 @@ html, body {
   margin-top: 10px; font-size: 13px; line-height: 1.45;
   color: #f6e7b0; opacity: 0.95;
 }
+
+/* Real Grove button sits under the settings button */
+.hud-grove { top: 54px; }
+
+/* Daily gift streak dots */
+.daily-dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 2px; }
+.daily-dots i { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); }
+.daily-dots i.on { background: #f6d365; box-shadow: 0 0 8px rgba(246, 211, 101, 0.6); }
+
+/* --- Real Grove sheet (reuses the shop sheet) ---------------------------- */
+.grove-intro { font-size: 13px; opacity: 0.8; margin: -4px 0 12px; }
+.grove-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.grove-count { font-size: 13px; font-weight: 700; color: #9fe08a; }
+.grove-card { display: flex; gap: 12px; align-items: center; padding: 10px; background: rgba(255, 255, 255, 0.06); border-radius: 12px; }
+.grove-card img, .grove-ph {
+  width: 72px; height: 72px; flex: 0 0 72px; border-radius: 10px; object-fit: cover;
+  background: rgba(255, 255, 255, 0.08); display: grid; place-items: center; font-size: 30px;
+}
+.grove-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.grove-info b { font-size: 15px; }
+.grove-info span { font-size: 12.5px; opacity: 0.85; }
+.grove-info small { font-size: 12px; opacity: 0.7; }
+.grove-empty { text-align: center; padding: 24px 12px; font-size: 32px; }
+.grove-empty p { font-size: 14px; line-height: 1.5; opacity: 0.8; margin-top: 8px; }

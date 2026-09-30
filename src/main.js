@@ -3,7 +3,7 @@
 import { MAX_DPR, CONTROL_BAND, GRID } from './config.js';
 import { plotAt, iconAt, tileCenter } from './state.js';
 import { computeLayout, L } from './layout.js';
-import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, doPrestige } from './game.js';
+import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, doPrestige, claimDaily, markDailyStart } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
@@ -12,6 +12,8 @@ import { createPrestige } from './prestige.js';
 import { initAudio, resumeAudio, setRain, sfx } from './sound.js';
 import { loadGame, saveGame, clearSave } from './save.js';
 import { createSettings } from './settings.js';
+import { createGrove } from './grove.js';
+import { showDaily } from './daily.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
 import { createCelebration } from './celebrate.js';
@@ -58,12 +60,14 @@ const settings = createSettings({
   onReplayStory() { initOnboarding(true); },
   onReset() { resetting = true; clearSave(); location.reload(); },
 });
+const grove = createGrove();
 const hud = createHud({
   onCollectWater() { state.water += collectAmount(state); if (state.stats) state.stats.collected++; sfx.collect(); },
   onSelectType(id) { state.selectedType = id; },
   onOpenShop() { shop.open(); },
   onOpenQuests() { quests.open(); },
   onOpenSettings() { settings.open(); },
+  onOpenGrove() { grove.open(); },
   // Selector height changes when a new tier unlocks; re-measure the reserve.
   onLayoutChange() { scheduleLayout(); },
 });
@@ -266,12 +270,19 @@ layout();
 requestAnimationFrame(frame); // game renders behind the overlays immediately
 // Loading animation (~2.5s), then the first-run story (once) or straight to play.
 showLoader(2500, () => {
-  // First run: the story. Returning after a while: a short "while away" note.
-  if (!initOnboarding() && (state.offlineSeconds || 0) > 60) {
+  const day = (t) => new Date(t).toLocaleDateString('en-CA'); // local YYYY-MM-DD
+  const today = day(Date.now()), yesterday = day(Date.now() - 86400000);
+  // First run: the story (streak starts today, no gift on top of it).
+  if (initOnboarding()) { markDailyStart(state, today); return; }
+  // Returning: a daily gift on a new day, then a short "while away" note.
+  const away = () => {
+    if ((state.offlineSeconds || 0) <= 60) return;
     const mins = Math.round(state.offlineSeconds / 60);
-    const away = mins < 60 ? `${mins} min` : `${Math.round(mins / 60)} h`;
-    showToast(`While you were away (${away}) your forest grew · +${Math.floor(state.offlineGain || 0)} 💧`);
-  }
+    const label = mins < 60 ? `${mins} min` : `${Math.round(mins / 60)} h`;
+    showToast(`While you were away (${label}) your forest grew · +${Math.floor(state.offlineGain || 0)} 💧`);
+  };
+  const gift = claimDaily(state, today, yesterday);
+  if (gift) { save(); showDaily(gift, away); } else away();
 });
 
 // A brief message that fades in and out at the top of the screen.

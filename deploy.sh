@@ -46,6 +46,8 @@ trap 'rm -rf "$BUILD_DIR"' EXIT
 cp index.html "$BUILD_DIR/"
 cp -r src "$BUILD_DIR/"
 cp .nojekyll "$BUILD_DIR/"
+cp grove.json "$BUILD_DIR/"                       # Real Grove data
+[ -d grove ] && cp -r grove "$BUILD_DIR/"          # Real Grove photos (optional)
 
 # --- 4. Publish it to gh-pages as a single clean commit -------------------
 # A throwaway repo keeps gh-pages history-light; force-push since it is a

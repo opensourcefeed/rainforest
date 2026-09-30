@@ -42,3 +42,26 @@ the repo name).
 
 Phase 0: playable browser prototype of stages 1–2. Built in small vertical slices — every
 commit runs. Migrating to Vite + Capacitor for the Android build in Phase 2.
+
+## Real Grove data
+
+The in-game **Real Grove** screen (🌍) loads `grove.json`, which `deploy.sh`
+publishes next to the game — so it can be updated without shipping a new build.
+Add one entry per real tree; put photos in a `grove/` folder (also published).
+
+```json
+{
+  "updated": "2026-10-01",
+  "trees": [
+    {
+      "species": "Neem (Azadirachta indica)",
+      "planted": "2026-06-14",
+      "location": "Approximate area, e.g. town or district",
+      "photo": "grove/neem-01.jpg",
+      "note": "Optional survival update, e.g. 'Healthy, 1.2 m tall'"
+    }
+  ]
+}
+```
+
+Keep locations approximate. Everything shown here is public.
