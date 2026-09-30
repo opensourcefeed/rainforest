@@ -2,17 +2,40 @@
 // transform so (0,0)..(DESIGN.w,DESIGN.h) maps to the fitted play field.
 import { DESIGN, HORIZON, CONTROL_BAND } from './config.js';
 import { plotRect } from './state.js';
-import { greening, unlockCost } from './game.js';
+import { avgMeter, unlockCost, STAGES } from './game.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
 }
 
-// Linear interpolation between two [r,g,b] colors -> css string.
-function mix(a, b, t) {
-  const c = a.map((v, i) => Math.round(v + (b[i] - v) * t));
-  return `rgb(${c[0]},${c[1]},${c[2]})`;
+const lerpArr = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const rgb = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+
+// Scene palette per stage (aligned to STAGES): sky and ground gradients that
+// carry the world from bare desert to lush rainforest.
+const PALETTES = [
+  { skyTop: [143, 183, 214], skyBot: [231, 214, 168], grTop: [217, 181, 121], grBot: [184, 137, 77] }, // desert
+  { skyTop: [150, 190, 205], skyBot: [214, 210, 175], grTop: [178, 176, 112], grBot: [140, 140, 80] }, // scrubland
+  { skyTop: [140, 190, 210], skyBot: [200, 216, 182], grTop: [122, 165, 82], grBot: [86, 120, 56] },   // grassland
+  { skyTop: [128, 186, 206], skyBot: [186, 210, 182], grTop: [92, 142, 68], grBot: [60, 100, 48] },     // dry woodland
+  { skyTop: [120, 180, 200], skyBot: [172, 206, 186], grTop: [58, 120, 58], grBot: [36, 86, 42] },      // rainforest
+];
+
+// Interpolated scene colors for the current environment average.
+function sceneColors(avg) {
+  let i = 0;
+  while (i < STAGES.length - 1 && avg >= STAGES[i + 1].min) i++;
+  const hi = Math.min(i + 1, STAGES.length - 1);
+  const span = STAGES[hi].min - STAGES[i].min || 1;
+  const t = Math.max(0, Math.min(1, (avg - STAGES[i].min) / span));
+  const A = PALETTES[i], B = PALETTES[hi];
+  return {
+    skyTop: lerpArr(A.skyTop, B.skyTop, t),
+    skyBot: lerpArr(A.skyBot, B.skyBot, t),
+    grTop: lerpArr(A.grTop, B.grTop, t),
+    grBot: lerpArr(A.grBot, B.grBot, t),
+  };
 }
 
 // Deterministic scatter of ground vegetation that fades in as the land greens,
@@ -55,30 +78,33 @@ function drawTufts(ctx, g) {
 
 export function renderScene(ctx, state) {
   const { w, h } = DESIGN;
-  const g = greening(state); // 0 desert .. 1 scrubland
+  const avg = avgMeter(state); // 0 desert .. 1 rainforest
+  const col = sceneColors(avg);
 
-  // Sky — hazy desert warms into a cooler, fresher scrubland sky.
+  // Sky
   const sky = ctx.createLinearGradient(0, 0, 0, HORIZON);
-  sky.addColorStop(0, mix([143, 183, 214], [120, 175, 210], g));
-  sky.addColorStop(1, mix([231, 214, 168], [200, 214, 178], g));
+  sky.addColorStop(0, rgb(col.skyTop));
+  sky.addColorStop(1, rgb(col.skyBot));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, HORIZON);
 
-  // Sun
+  // Sun — bright over the desert, dimming as the canopy/humidity build.
+  ctx.globalAlpha = 1 - 0.6 * avg;
   ctx.fillStyle = '#fff4d6';
   ctx.beginPath();
   ctx.arc(w * 0.74, h * 0.16, 42, 0, Math.PI * 2);
   ctx.fill();
+  ctx.globalAlpha = 1;
 
-  // Ground — bare sand greens toward scrub soil as the environment recovers.
+  // Ground
   const sand = ctx.createLinearGradient(0, HORIZON, 0, h);
-  sand.addColorStop(0, mix([217, 181, 121], [122, 156, 74], g));
-  sand.addColorStop(1, mix([184, 137, 77], [92, 116, 56], g));
+  sand.addColorStop(0, rgb(col.grTop));
+  sand.addColorStop(1, rgb(col.grBot));
   ctx.fillStyle = sand;
   ctx.fillRect(0, HORIZON, w, h - HORIZON);
 
   // Vegetation creeping across the ground as the land heals.
-  drawTufts(ctx, g);
+  drawTufts(ctx, avg);
 
   // Lone figure (placeholder)
   ctx.fillStyle = '#4a3a24';

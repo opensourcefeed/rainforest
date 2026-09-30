@@ -99,10 +99,13 @@ export function avgMeter(state) {
   return (m.soil + m.shade + m.humidity) / 3;
 }
 
-// Progression stages, keyed off the environment average. Phase 0 covers 1–2.
+// Progression stages, keyed off the environment average (0..1).
 export const STAGES = [
   { name: 'Barren desert', min: 0 },
   { name: 'Scrubland', min: 0.2 },
+  { name: 'Grassland', min: 0.4 },
+  { name: 'Dry woodland', min: 0.62 },
+  { name: 'Rainforest', min: 0.85 },
 ];
 
 export function currentStage(state) {
