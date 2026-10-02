@@ -381,7 +381,7 @@ export function renderScene(ctx, state, now = 0, man = null) {
           ctx.font = `${Math.round(16 * unit)}px system-ui, sans-serif`;
           ctx.fillText('💧', c.x, iy);
         } else {
-          drawCoin(ctx, c.x, iy, (5.5 + 0.7 * Math.sin(time * 5 + p.col)) * unit);
+          drawCoin(ctx, c.x, iy, (3.8 + 0.4 * Math.sin(time * 4 + p.col)) * unit);
         }
       }
       // Mixed grove (3+ species around it): a small gold marker on the tile.
@@ -631,7 +631,7 @@ function drawFx(ctx, state) {
 // A small gold coin — the "ready to harvest" token above a grown plant.
 function drawCoin(ctx, x, y, r) {
   const glow = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 2);
-  glow.addColorStop(0, 'rgba(246, 207, 79, 0.45)');
+  glow.addColorStop(0, 'rgba(246, 207, 79, 0.3)');
   glow.addColorStop(1, 'rgba(246, 207, 79, 0)');
   ctx.fillStyle = glow;
   ctx.beginPath(); ctx.arc(x, y, r * 2, 0, Math.PI * 2); ctx.fill();
@@ -657,7 +657,7 @@ function wilt(hex) {
 function blob(ctx, x, y, r, fill, rim) {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fillStyle = fill; ctx.fill();
-  ctx.lineWidth = 1.7; ctx.strokeStyle = rim; ctx.stroke();
+  ctx.lineWidth = 1.1; ctx.strokeStyle = rim; ctx.stroke();
 }
 function roundFillStroke(ctx, x, y, w, h, rad) {
   roundRect(ctx, x, y, w, h, rad); ctx.fill(); ctx.stroke();
@@ -748,6 +748,6 @@ function drawPlant(ctx, cx, baseY, plant) {
 
   // Thirsty plants wilt; otherwise each plant gets a slight brightness shift.
   const color = plant.thirsty ? wilt(type.color) : tint(type.color, (v2 - 0.5) * 0.3);
-  (SHAPES[type.id] || SHAPES.seed)(ctx, jx, jy, s, color, darken(color, 0.48));
+  (SHAPES[type.id] || SHAPES.seed)(ctx, jx, jy, s, color, darken(color, 0.62));
   ctx.globalAlpha = 1;
 }

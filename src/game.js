@@ -427,14 +427,22 @@ export function harvestValue(state, plot) {
 export function harvestFruit(state, index) {
   const plot = state.plots[index];
   const p = plot && plot.plant;
-  if (!p || !p.ripe) return false;
+  if (!p || !p.ripe) return 0;
   const gain = harvestValue(state, plot);
   state.water += gain;
   p.ripe = false;
   p.fruit = 0;
   if (state.stats) state.stats.harvested = (state.stats.harvested || 0) + 1;
   pushFx(state, plot.col, plot.row, 'unlock', `+${gain}💧`);
-  return true;
+  return gain;
+}
+// Harvest every ripe plant at once (one tap collects the whole grove).
+export function harvestAll(state) {
+  let total = 0;
+  for (let i = 0; i < state.plots.length; i++) {
+    if (state.plots[i].plant && state.plots[i].plant.ripe) total += harvestFruit(state, i);
+  }
+  return total;
 }
 export function waterPlant(state, index) {
   const plot = state.plots[index];
@@ -492,7 +500,7 @@ export function actOnTile(state, index) {
   if (a === 'plant') return plantSeed(state, index) ? a : null;
   if (a === 'upgrade') return upgradePlant(state, index) ? a : null;
   if (a === 'water') return waterPlant(state, index) ? a : null;
-  if (a === 'harvest') return harvestFruit(state, index) ? a : null;
+  if (a === 'harvest') return harvestAll(state) ? a : null;
   return null;
 }
 
