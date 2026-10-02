@@ -14,10 +14,10 @@
 // name/emoji/color per tier; game.PLANT_TYPES keeps cost/meterMul/yieldMul/size.
 // World 0 (desert) is identical to today's PLANT_TYPES so nothing changes.
 
-// Grid stays 4×5 for every world until the drag-to-pan camera lands (Phase B);
-// only then do later worlds grow bigger. Keeping it fixed now means the
-// dimension refactor (slice A2) is behaviour-preserving and balance is unchanged.
-const COLS = 4, ROWS = 5;
+// Grids grow with the chain now that the drag-to-pan camera exists (Phase B):
+// the first world stays the tuned 4×5 that fits any screen; later worlds get
+// bigger (and pan/zoom). The economy is normalised to the 4×5 baseline
+// (game.REF_TILES) so pacing stays similar regardless of grid size.
 
 export const WORLDS = [
   {
@@ -26,7 +26,7 @@ export const WORLDS = [
     region: 'India',
     biome: 'desert',
     blurb: 'A lone man, a few jugs of water, and seeds that mostly die. Begin here.',
-    cols: COLS, rows: ROWS,
+    cols: 4, rows: 5,
     mods: { survivalBonus: 0, growthMul: 1, thirstMul: 1 },
     // Sky/ground gradients per stage (barren → lush). Matches render.PALETTES.
     palettes: [
@@ -50,7 +50,7 @@ export const WORLDS = [
     region: 'West Africa',
     biome: 'savanna',
     blurb: 'The edge of the Sahara, parched by drought. Hardy acacias can hold the line.',
-    cols: COLS, rows: ROWS,
+    cols: 5, rows: 6,
     // Twist: harsher sun — seedlings survive a little less, so nurse plants and
     // upgrades matter more here.
     mods: { survivalBonus: -0.05, growthMul: 1, thirstMul: 1.3 },
@@ -76,7 +76,7 @@ export const WORLDS = [
     region: 'China',
     biome: 'highland',
     blurb: 'Centuries of erosion stripped these hills bare. Terraces can bring them back.',
-    cols: COLS, rows: ROWS,
+    cols: 6, rows: 7,
     // Twist: cool, dry highland — plants grow a touch slower but rarely thirst.
     mods: { survivalBonus: 0, growthMul: 0.9, thirstMul: 0.6 },
     // Red-ochre terracotta earth, cool pale sky, greening to terraced hills.
@@ -101,7 +101,7 @@ export const WORLDS = [
     region: 'Brazil',
     biome: 'tropical',
     blurb: 'Warm rains and rich soil. Life wants to return — give it a foothold.',
-    cols: COLS, rows: ROWS,
+    cols: 6, rows: 8,
     // Twist: warm and wet — everything grows faster and survives more readily.
     mods: { survivalBonus: 0.05, growthMul: 1.15, thirstMul: 0.7 },
     // Humid tropics: deep blue sky and rich soil even at the start, to the

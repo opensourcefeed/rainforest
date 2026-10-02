@@ -215,4 +215,16 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       acacia, baobab, pine, fern silhouettes in render.js, assigned per world (Thar date palm,
       Sahel acacia+baobab, Loess pine, Atlantic fern+palm). Falls back to the tier shape.
 
-Next: real-device playtest; then Phase B (bigger drag-to-pan grids + economy rescale + balance-sim).
+### Phase B — bigger drag-to-pan grids
+- [x] **B1+B2 — camera scaffolding.** L.camX/camY/zoom/panX/panY/canPan; computeLayout fits &
+      locks grids that fit (COMFORT_TW=34) or makes big ones pannable/zoomable; applyZoomPan()/
+      clampCam(); tileCenter/plotAt apply the camera; render culls off-screen tiles. cam=0 for
+      grids that fit (behaviour unchanged).
+- [x] **B3 — input.** Tap vs drag (DRAG_SLOP); drag pans, pinch + double-tap zoom (pannable
+      grids only); idle man re-anchors to his tile so he moves with the camera.
+- [x] **B4 — economy rescale.** Greening scaled by REF_TILES/worldTiles; unlock-cost curve
+      stretched over the larger plot count — both make world 0 (20t) mathematically unchanged.
+- [x] **B5 — bigger per-world grids.** 4×5 → 5×6 → 6×7 → 6×8. Sim: Rainforest 12.3→14.3m across
+      worlds (normalised pacing holds); world-0 balance sim byte-identical.
+
+Next: real-device playtest of pan/zoom + big grids.

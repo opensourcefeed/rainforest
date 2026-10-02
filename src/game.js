@@ -243,16 +243,31 @@ export function plantCost(state, type) {
 const UNLOCK_BASE = 4;
 const UNLOCK_GROWTH = 1.35;
 
+// Baseline grid the economy was tuned against (the original 4×5). Bigger worlds
+// are normalised to this so pacing stays similar regardless of grid size.
+export const REF_TILES = 20;
+const REF_BUYABLE = REF_TILES - STARTER_PLOTS; // plots bought on the baseline grid
+
 export function unlockedCount(state) {
   let n = 0;
   for (const p of state.plots) if (p.unlocked) n++;
   return n;
 }
 
-// Cost to unlock the next plot.
+function worldTiles() {
+  const { cols, rows } = activeDims();
+  return cols * rows;
+}
+
+// Cost to unlock the next plot. On bigger grids the SAME cost curve is stretched
+// over the larger plot count (the Nth of M buyable plots costs like the
+// proportional plot on the baseline grid), so the full-expansion curve matches
+// the tuned 4×5 one and world 0 is unchanged.
 export function unlockCost(state) {
   const beyond = Math.max(0, unlockedCount(state) - STARTER_PLOTS);
-  return Math.ceil(UNLOCK_BASE * Math.pow(UNLOCK_GROWTH, beyond));
+  const buyable = Math.max(1, worldTiles() - STARTER_PLOTS);
+  const scaledBeyond = beyond * (REF_BUYABLE / buyable);
+  return Math.ceil(UNLOCK_BASE * Math.pow(UNLOCK_GROWTH, scaledBeyond));
 }
 
 // Try to unlock plot `index`. Handles its own feedback; returns true on success.
@@ -598,6 +613,10 @@ export function updateWorld(state, dt) {
   const lb = legacyBonus(state);
   const mods = worldMods();
   const growthMul = (1 + upgradeLevel(state, 'growth') * UP_GROWTH) * (mods.growthMul || 1);
+  // Normalise greening to the baseline grid: a bigger grove has more plants all
+  // feeding the meters, so each plant contributes proportionally less and a FULL
+  // grid of any size greens at a similar pace (world 0 = 1, so unchanged).
+  const meterScale = REF_TILES / worldTiles();
   const yieldMulUp = (1 + upgradeLevel(state, 'yield') * UP_YIELD) * lb;
   const raining = !!(state.rain && state.rain.intensity > 0.3);
   state.water += (WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03) * dt; // trickle
@@ -652,7 +671,7 @@ export function updateWorld(state, dt) {
       if (wasGrowing && p.growth >= 1 && state.events && state.events.length < 40) state.events.push('mature');
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
-      const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb * careMul;
+      const g = METER_GAIN * meterScale * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb * careMul;
       m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 3);
       m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 3);
       m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 3);

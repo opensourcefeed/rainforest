@@ -1,11 +1,15 @@
 // Balance sim: a sensible bot plays the full loop; reports pacing + economy.
 const root = new URL('../src/', import.meta.url).href;
-const { createState } = await import(root + 'state.js');
+const { createState, freshPlots } = await import(root + 'state.js');
+const W = await import(root + 'world.js');
 const G = await import(root + 'game.js');
 
-export function run({ minutes = 40, tapRate = 1, seed = 1, actEvery = 1, smart = true } = {}) {
+export function run({ minutes = 40, tapRate = 1, seed = 1, actEvery = 1, smart = true, world = 'thar' } = {}) {
   let rs = seed; Math.random = () => (rs = (rs * 16807) % 2147483647) / 2147483647;
-  const s = createState(); G.initQuests(s);
+  W.setActiveWorld(world);
+  const s = createState();
+  if (world !== 'thar') { s.worldId = world; W.setActiveWorld(world); s.plots = freshPlots(world); }
+  G.initQuests(s);
   const dt = 0.5; let t = 0, nextAct = 0;
   const reached = {}; const samples = []; let prestigeAt = null; let spent = 0;
   const tier = (id) => G.PLANT_TYPES.findIndex((p) => p.id === id);
@@ -48,4 +52,15 @@ for (const seed of [1, 7, 42]) {
   const r = run({ seed });
   console.log(`seed ${seed}: stages ${[0,1,2,3,4].map((i) => mm(r.reached[i])).join(' → ')} | prestige-ready ${mm(r.prestigeAt)} | end water ${r.water}, spent ${r.spent}, upgrades ${r.upgrades}`);
   if (seed === 1) console.log('   water over time:', r.samples.join('  '));
+}
+
+// Per-world pacing (grid-size normalisation check): with the economy normalised
+// to the 4×5 baseline, each world should reach Rainforest in a similar time
+// despite larger grids. The later-world twists (mods) shift it a little.
+console.log('\nper-world pacing (seed 1, 60m cap):');
+for (const id of ['thar', 'sahel', 'loess', 'atlantic']) {
+  const w = W.worldById(id);
+  const r = run({ seed: 1, minutes: 60, world: id });
+  console.log(`  ${id.padEnd(9)} ${w.cols}x${w.rows} (${w.cols * w.rows}t): ` +
+    `stages ${[1,2,3,4].map((i) => mm(r.reached[i])).join(' → ')} | rainforest ${mm(r.reached[4])} | living ${r.living}`);
 }
