@@ -90,9 +90,9 @@ export function applySnapshot(state, id, snap) {
   state.milestone = null;
 }
 
-// Screen (CSS px) center of a tile, from the adaptive layout.
+// Screen (CSS px) center of a tile, from the adaptive layout (+ camera pan).
 export function tileCenter(col, row) {
-  return { x: L.ox + (col - row) * L.tw, y: L.oy + (col + row) * L.th };
+  return { x: L.ox + L.camX + (col - row) * L.tw, y: L.oy + L.camY + (col + row) * L.th };
 }
 
 // Drawn height (px) of a plant. Kept short (a bit over one tile) so tall tiers
@@ -122,7 +122,7 @@ export function iconAt(state, x, y) {
 // (inverse iso transform), so EVERY tile is tappable by its own diamond
 // regardless of what's planted on neighbouring tiles.
 export function plotAt(state, x, y) {
-  const px = x - L.ox, py = y - L.oy;
+  const px = x - L.ox - L.camX, py = y - L.oy - L.camY;
   const col = Math.round((px / L.tw + py / L.th) / 2);
   const row = Math.round((py / L.th - px / L.tw) / 2);
   const { cols, rows } = activeDims();

@@ -13,9 +13,22 @@ export const L = {
   horizonY: 0,          // sky/ground boundary, screen px
   groundBottom: 0,      // bottom of the ground (= h)
   reserve: CONTROL_BAND, // px reserved at the bottom for the HUD controls
-  tw: 40, th: 20,       // iso tile half-width / half-height
-  ox: 0, oy: 0,         // iso grid origin
+  tw: 40, th: 20,       // iso tile half-width / half-height (zoom-adjusted)
+  ox: 0, oy: 0,         // iso grid origin (grid-centred in the ground band)
+  // --- Camera (Phase B) --- A big grid can't fit on screen, so the player pans
+  // (and zooms) over it. camX/camY offset the origin; zoom scales the tile size.
+  // Small grids that fit are centred and locked (canPan false, cam 0, zoom 1).
+  camX: 0, camY: 0,     // pan offset, screen px
+  panX: 0, panY: 0,     // max |camX|/|camY| (clamp bounds)
+  canPan: false,        // true only when the grid overflows the ground band
+  zoom: 1,              // user zoom multiplier on the base fit tile size
+  minZoom: 1, maxZoom: 1,
+  baseTw: 40,           // fit tile size before zoom (tw = baseTw * zoom)
 };
+
+// Comfortable minimum tile half-width (≈ tap target). Below this a grid is too
+// big to fit, so we stop shrinking and let the player pan instead.
+const COMFORT_TW = 34;
 
 // Recompute L for the current viewport and measured control reserve (px).
 export function computeLayout(winW, winH, reserveCss) {
@@ -36,9 +49,26 @@ export function computeLayout(winW, winH, reserveCss) {
   const availH = Math.max(80, bandBottom - bandTop);
 
   // Fit the iso footprint (width (cols+rows)*tw, height (cols+rows)*th, th=tw/2)
-  // into the available ground area, then clamp so it's neither tiny nor huge.
-  let tw = Math.min(availW / (cols + rows), availH / ((cols + rows) * 0.5));
-  tw = Math.max(22, Math.min(tw, 58));
+  // into the available ground area. If it fits at a comfortable tile size, use
+  // that (centred, locked — the small-grid behaviour). If it's too big to fit at
+  // COMFORT_TW, stop shrinking there and let the player pan over it.
+  const fitTw = Math.min(availW / (cols + rows), availH / ((cols + rows) * 0.5));
+  L.baseTw = Math.max(COMFORT_TW, Math.min(fitTw, 58));
+
+  // Zoom: panning grids can be zoomed out (to survey) and in (to tap). A grid
+  // that already fits is locked at zoom 1.
+  const overflows = fitTw < COMFORT_TW;
+  L.minZoom = overflows ? 0.7 : 1;
+  L.maxZoom = overflows ? 1.6 : 1;
+  L.zoom = Math.max(L.minZoom, Math.min(L.maxZoom, L.zoom || 1));
+  applyZoomPan(winW, bandTop, bandBottom, cols, rows);
+}
+
+// Recompute tile size (base × zoom), origin (grid centred in the band), and pan
+// bounds, then clamp the current pan into them. Called on layout and whenever
+// the zoom changes, so the view stays consistent and never scrolls fully away.
+export function applyZoomPan(winW, bandTop, bandBottom, cols, rows) {
+  const tw = L.baseTw * L.zoom;
   L.tw = tw;
   L.th = tw * 0.5;
   L.unit = tw / 42; // 42 ~ the old phone tile size
@@ -46,4 +76,25 @@ export function computeLayout(winW, winH, reserveCss) {
   const bandCenter = (bandTop + bandBottom) / 2;
   L.oy = bandCenter - ((cols + rows - 2) / 2) * L.th;
   L.ox = winW / 2 - ((cols - rows) / 2) * L.tw;
+
+  // True grid bounding box ((cols+rows)*tw already includes a tile half-extent
+  // each side). Pan range is half the overflow, plus a tile of breathing room so
+  // edge tiles aren't jammed against the screen edge — but ONLY when it overflows.
+  const gridW = (cols + rows) * L.tw;
+  const gridH = (cols + rows) * L.th;
+  const bandH = bandBottom - bandTop;
+  L.panX = gridW > winW ? (gridW - winW) / 2 + L.tw : 0;
+  L.panY = gridH > bandH ? (gridH - bandH) / 2 + L.th : 0;
+  L.canPan = L.panX > 1 || L.panY > 1;
+
+  if (!L.canPan) { L.camX = 0; L.camY = 0; }
+  else { L.camX = clamp(L.camX, -L.panX, L.panX); L.camY = clamp(L.camY, -L.panY, L.panY); }
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// Re-clamp the current pan into bounds (after a drag nudges camX/camY).
+export function clampCam() {
+  L.camX = clamp(L.camX, -L.panX, L.panX);
+  L.camY = clamp(L.camY, -L.panY, L.panY);
 }

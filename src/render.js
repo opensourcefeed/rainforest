@@ -319,7 +319,7 @@ export function renderBackdrop(ctx, state, now = 0) {
 }
 
 export function renderScene(ctx, state, now = 0, man = null) {
-  const { w, h, tw, th, unit } = L;
+  const { w, h, tw, th, unit, horizonY } = L;
   const time = now / 1000;
   const avg = avgMeter(state); // 0 desert .. 1 rainforest
 
@@ -340,6 +340,8 @@ export function renderScene(ctx, state, now = 0, man = null) {
   const ordered = [...state.plots].sort((a, b) => (a.col + a.row) - (b.col + b.row));
   for (const p of ordered) {
     const c = tileCenter(p.col, p.row);
+    // Cull tiles well outside the viewport (big pannable grids draw far fewer).
+    if (c.x < -2 * tw || c.x > w + 2 * tw || c.y < horizonY - 4 * th || c.y > h + 4 * th) continue;
 
     if (!p.unlocked) {
       // Locked desert: a flat dim diamond with its buy price.
