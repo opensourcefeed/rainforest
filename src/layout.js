@@ -61,13 +61,17 @@ export function computeLayout(winW, winH, reserveCss) {
   L.minZoom = overflows ? 0.7 : 1;
   L.maxZoom = overflows ? 1.6 : 1;
   L.zoom = Math.max(L.minZoom, Math.min(L.maxZoom, L.zoom || 1));
-  applyZoomPan(winW, bandTop, bandBottom, cols, rows);
+  applyZoomPan();
 }
 
 // Recompute tile size (base × zoom), origin (grid centred in the band), and pan
-// bounds, then clamp the current pan into them. Called on layout and whenever
-// the zoom changes, so the view stays consistent and never scrolls fully away.
-export function applyZoomPan(winW, bandTop, bandBottom, cols, rows) {
+// bounds, then clamp the current pan into them. Derives everything from L +
+// activeDims so input code can call it after a zoom change with no args.
+export function applyZoomPan() {
+  const { cols, rows } = activeDims();
+  const bandTop = L.horizonY + 20;
+  const bandBottom = L.h - L.reserve;
+  const winW = L.w;
   const tw = L.baseTw * L.zoom;
   L.tw = tw;
   L.th = tw * 0.5;

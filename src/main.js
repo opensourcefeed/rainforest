@@ -3,7 +3,7 @@
 import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt, iconAt, tileCenter } from './state.js';
 import { activeDims } from './world.js';
-import { computeLayout, L } from './layout.js';
+import { computeLayout, applyZoomPan, clampCam, L } from './layout.js';
 import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, completeWorld, claimDaily, markDailyStart } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
@@ -194,9 +194,12 @@ function moveMan(dt) {
       man.y += dy / dist * step;
     }
   } else {
-    // Idle: stay where he is (no walking back to the start).
+    // Idle: stay glued to his tile (re-anchored each frame so he moves with the
+    // camera when the player pans/zooms a big grid, and after a resize).
     man.moving = false;
     man.facing = 1;
+    const r = man.lastIdx != null ? manStandAt(man.lastIdx) : manRest();
+    man.x = r.x; man.y = r.y;
   }
 }
 
@@ -267,20 +270,100 @@ function toggleDebug() {
 }
 
 addEventListener('keydown', (e) => { if (e.key === 'd' || e.key === 'D') toggleDebug(); });
-addEventListener('pointerdown', (e) => {
-  if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); return; } // above the eco panel
-  if (e.target !== canvas) return; // ignore HUD buttons and open overlays
-  const p = eventToScreen(e);
-  let plotIndex = iconAt(state, p.x, p.y); // fruit / thirst icons first
-  if (plotIndex === -1) plotIndex = plotAt(state, p.x, p.y);
-  if (plotIndex === -1) return;
-  // Queue the tile; the man walks there and acts on arrival (see moveMan).
-  // Only walk if the tap would do something (unlock / plant / upgrade).
-  if (tileAction(state, plotIndex) && man.queue.length < 8) man.queue.push(plotIndex);
+
+// --- Pointer input: tap to act, drag to pan, pinch / double-tap to zoom. -----
+// A press becomes a drag once it moves past DRAG_SLOP; otherwise, on release,
+// it's a tap that acts on the tile under it (as before). Panning/zoom only do
+// anything when the grid overflows the screen (L.canPan / zoom range).
+const DRAG_SLOP = 8; // px before a press counts as a drag, not a tap
+const pointers = new Map(); // active pointerId -> last {x,y}
+let drag = null;            // single-pointer pan: { id, startX, startY, moved }
+let pinch = null;           // two-pointer zoom: { startDist, startZoom }
+let lastTapT = 0;
+
+function clientXY(e) { return { x: e.clientX, y: e.clientY }; }
+
+canvas.addEventListener('pointerdown', (e) => {
+  initAudio(); resumeAudio();
+  pointers.set(e.pointerId, clientXY(e));
+  if (pointers.size === 2) {
+    // Begin a pinch: remember the start finger spread and zoom.
+    const [a, b] = [...pointers.values()];
+    pinch = { startDist: Math.hypot(a.x - b.x, a.y - b.y) || 1, startZoom: L.zoom };
+    drag = null;
+  } else if (pointers.size === 1) {
+    drag = { id: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+  }
 });
 
-// Web Audio must start from a user gesture.
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId)) return;
+  const prev = pointers.get(e.pointerId);
+  pointers.set(e.pointerId, clientXY(e));
+
+  if (pinch && pointers.size >= 2) {
+    const [a, b] = [...pointers.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    L.zoom = pinch.startZoom * (dist / pinch.startDist);
+    L.zoom = Math.max(L.minZoom, Math.min(L.maxZoom, L.zoom));
+    applyZoomPan();
+    return;
+  }
+
+  if (drag && e.pointerId === drag.id) {
+    if (!drag.moved && Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > DRAG_SLOP) {
+      drag.moved = true;
+    }
+    if (drag.moved && L.canPan) {
+      L.camX += e.clientX - prev.x;
+      L.camY += e.clientY - prev.y;
+      clampCam();
+    }
+  }
+});
+
+function endPointer(e) {
+  const wasDragId = drag && drag.id === e.pointerId;
+  const tapped = wasDragId && !drag.moved && pointers.size === 1 && e.target === canvas;
+  pointers.delete(e.pointerId);
+  try { canvas.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  if (pointers.size < 2) pinch = null;
+
+  if (tapped) {
+    // A clean tap (no drag): debug corner, then act on the tile under it.
+    if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); drag = null; return; }
+    const now = performance.now();
+    if (now - lastTapT < 300 && L.maxZoom > 1) {
+      doubleTapZoom(); // quick zoom toggle on pannable grids
+    } else {
+      tapTile(eventToScreen(e));
+    }
+    lastTapT = now;
+  }
+  if (wasDragId) drag = null;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+// Web Audio must start from a user gesture — resume on any press (incl. HUD).
 addEventListener('pointerdown', () => { initAudio(); resumeAudio(); });
+
+// Act on the tile under a screen point (fruit/thirst icon first, then ground).
+function tapTile(p) {
+  let plotIndex = iconAt(state, p.x, p.y);
+  if (plotIndex === -1) plotIndex = plotAt(state, p.x, p.y);
+  if (plotIndex === -1) return;
+  // Only walk if the tap would do something (unlock / plant / care / uproot).
+  if (tileAction(state, plotIndex) && man.queue.length < 8) man.queue.push(plotIndex);
+}
+
+// Double-tap toggles between fit-out and a zoomed-in view (pannable grids only).
+function doubleTapZoom() {
+  const zoomedIn = L.zoom > (L.minZoom + L.maxZoom) / 2;
+  L.zoom = zoomedIn ? L.minZoom : L.maxZoom;
+  applyZoomPan();
+}
 
 let relayoutQueued = false;
 function scheduleLayout() {
