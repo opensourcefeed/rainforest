@@ -342,6 +342,40 @@ export function waterRate(state) {
     }
   }
   if (state.rain) rate += RAIN_WATER * (state.rain.intensity || 0);
+  return rate + totalIdleIncome(state); // + passive water from restored worlds
+}
+
+// --- Idle income: restored worlds keep growing water -----------------------
+// A world you've restored stays in the save and pours water into the shared
+// global pool, whether you're tending it or another land — the endless-idle
+// loop. Only NON-active restored worlds count here; the active world's grove
+// already yields live through the loop above (no double counting).
+const IDLE_YIELD = 0.05; // water/sec per unit of (growth × tier yield), at legacy 0
+
+// Water/sec from one restored-world snapshot. Zero unless it's been restored.
+export function worldIncome(snap, legacyMul = 1) {
+  if (!snap || !snap.restoredDate || !Array.isArray(snap.plots)) return 0;
+  let rate = 0;
+  for (const plot of snap.plots) {
+    const p = plot.plant;
+    if (p && p.status === 'alive') {
+      const type = TYPE_BY_ID[p.typeId] || PLANT_TYPES[0];
+      rate += IDLE_YIELD * (p.growth || 0) * type.yieldMul;
+    }
+  }
+  return rate * legacyMul;
+}
+
+// Combined passive water/sec from every restored world except the active one.
+export function totalIdleIncome(state) {
+  const worlds = state.worlds;
+  if (!worlds) return 0;
+  const lb = legacyBonus(state);
+  let rate = 0;
+  for (const id in worlds) {
+    if (id === state.worldId) continue; // active world yields live
+    rate += worldIncome(worlds[id], lb);
+  }
   return rate;
 }
 
@@ -556,6 +590,7 @@ export function updateWorld(state, dt) {
   const yieldMulUp = (1 + upgradeLevel(state, 'yield') * UP_YIELD) * lb;
   const raining = !!(state.rain && state.rain.intensity > 0.3);
   state.water += (WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03) * dt; // trickle
+  state.water += totalIdleIncome(state) * dt; // passive water from restored worlds
 
   // Age and expire transient effects.
   for (let i = state.fx.length - 1; i >= 0; i--) {

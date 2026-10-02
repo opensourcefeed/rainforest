@@ -192,7 +192,8 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
 - [x] **A5 — restore-next UI.** Shop card → "Restore the Next Land → <place, region>" (or
       "Complete This Forest"); prestige modal reveals the next place + blurb, states the global
       pool is kept and the forest stays behind growing water. Folded into A4 so no stale copy ships.
-- [ ] **A6 — per-world twist** in survival/growth/thirst formulas.
+- [x] **A6 — per-world twist.** worldMods() feeds survivalChance (+survivalBonus) and updateWorld
+      (×growthMul, ×thirstMul). World 0 neutral (balance unchanged); Sahel harsher, Atlantic easier.
 - [ ] **A7 — idle income** from restored worlds (live + offline) + HUD passive rate.
 - [ ] **A8 — World Map overlay = switch hub** (🗺️).
 - [ ] **A9 — world-complete celebration.**
