@@ -185,7 +185,7 @@ function drawJug(ctx, x, y, u) {
   ctx.fillRect(x - s * 0.17, y - s * 1.28, s * 0.34, s * 0.42);
 }
 
-function drawWater(ctx, w, horizonY, h, avg, time) {
+function drawWater(ctx, w, horizonY, h, avg, time, rainI = 0) {
   const u = L.unit;
   const gb = h - horizonY;
   const hash = (i) => { const q = Math.sin(i * 127.1) * 43758.5; return q - Math.floor(q); };
@@ -238,6 +238,31 @@ function drawWater(ctx, w, horizonY, h, avg, time) {
     ctx.fill();
   }
   ctx.restore();
+
+  // Rain dimples: expanding ripple rings pock the surface while it rains. Count
+  // and opacity scale with intensity; each drop relocates when its ring resets,
+  // so the whole band twinkles. Rings are iso-flattened to lie on the water.
+  if (rainI > 0.05) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rad, hgt, 0, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.lineWidth = 1 * u;
+    const drops = Math.round((6 + t * 12) * rainI);
+    for (let i = 0; i < drops; i++) {
+      const cycle = time * 1.3 + hash(i * 3.1);
+      const phase = cycle % 1;                       // 0 (drop) → 1 (faded ring)
+      const seed = Math.floor(cycle);                // new spot each cycle
+      const px = cx + (hash(i + seed * 0.37) * 2 - 1) * rad * 0.9;
+      const py = cy + (hash(i * 7.7 + seed * 0.91) * 2 - 1) * hgt * 0.65;
+      const rr = phase * 6 * u;                       // ring grows
+      ctx.strokeStyle = `rgba(226, 244, 255, ${(1 - phase) * 0.5 * rainI})`;
+      ctx.beginPath();
+      ctx.ellipse(px, py, rr, rr * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // Reeds along the near edge, across the visible span, gently swaying.
   ctx.strokeStyle = '#3d7a2c';
@@ -307,9 +332,9 @@ export function renderBackdrop(ctx, state, now = 0) {
   ctx.save();
   applyCamera(ctx);
   ctx.drawImage(staticBackdrop(avg), 0, 0, w, h);
-  drawWater(ctx, w, hy, h, avg, time);
-
   const rainI = (state.rain && state.rain.intensity) || 0;
+  drawWater(ctx, w, hy, h, avg, time, rainI);
+
   drawSun(ctx, w * 0.74, hy * 0.42, avg, time, 1 - 0.72 * rainI);
   drawCritters(ctx, w, hy, h, avg, time);
 

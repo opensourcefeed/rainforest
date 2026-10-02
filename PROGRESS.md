@@ -238,6 +238,9 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       (trackpad pinch arrives as a ctrlKey wheel) does cursor-anchored incremental zoom via the
       existing setZoom focal math; preventDefault stops browser page-zoom. Complements the
       existing desktop double-click (toggle) zoom + drag-to-pan.
+- [x] **B9 — rain ripples on the water.** While it rains, expanding ripple dimples pock the
+      pond/river surface (drawWater gets rain intensity; count/opacity scale with it, iso-flattened
+      rings clipped to the water, each drop relocating per cycle). No glassy water mid-downpour.
 - [x] **B7 — HUD overlap fixes (from screenshot).** (1) Rain badge was centred at top and
       collided with the right-anchored water counter → moved to the top-right status column
       (under 💧/🌱, clear of the round buttons). (2) The hint line and plant selector were
