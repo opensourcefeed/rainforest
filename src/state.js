@@ -1,14 +1,16 @@
 // Game state + world geometry. Geometry helpers live here so rendering and
 // input hit-testing share one source of truth.
-import { GRID, STARTER_PLOTS } from './config.js';
+import { STARTER_PLOTS } from './config.js';
 import { START_WATER, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 import { L } from './layout.js';
+import { activeDims } from './world.js';
 
 
 export function createState() {
   const plots = [];
-  for (let row = 0; row < GRID.rows; row++) {
-    for (let col = 0; col < GRID.cols; col++) {
+  const { cols, rows } = activeDims();
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
       // Start with a small unlocked patch (the first STARTER_PLOTS); the rest
       // are locked desert bought with water.
       plots.push({ col, row, planted: false, unlocked: plots.length < STARTER_PLOTS });
@@ -75,6 +77,7 @@ export function plotAt(state, x, y) {
   const px = x - L.ox, py = y - L.oy;
   const col = Math.round((px / L.tw + py / L.th) / 2);
   const row = Math.round((py / L.th - px / L.tw) / 2);
-  if (col < 0 || row < 0 || col >= GRID.cols || row >= GRID.rows) return -1;
-  return row * GRID.cols + col;
+  const { cols, rows } = activeDims();
+  if (col < 0 || row < 0 || col >= cols || row >= rows) return -1;
+  return row * cols + col;
 }

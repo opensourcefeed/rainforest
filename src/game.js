@@ -1,6 +1,7 @@
 // Gameplay rules and actions. state.js holds data + geometry; this holds the
 // verbs and the per-frame world update.
-import { STARTER_PLOTS, GRID } from './config.js';
+import { STARTER_PLOTS } from './config.js';
+import { activeDims, activeWorld } from './world.js';
 
 export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
 
@@ -15,6 +16,23 @@ export const PLANT_TYPES = [
   { id: 'canopy', name: 'Canopy',     emoji: '🌴', cost: 95, minStage: 4, meterMul: 3.6, yieldMul: 1.9, growTime: 40, color: '#2a6f2e', size: 2.1 },
 ];
 export const TYPE_BY_ID = Object.fromEntries(PLANT_TYPES.map((t) => [t.id, t]));
+const TIER_BY_ID = Object.fromEntries(PLANT_TYPES.map((t, i) => [t.id, i]));
+
+// Display name/emoji/color for a plant type IN THE ACTIVE WORLD. Gameplay stats
+// (cost, meterMul, yieldMul, size, growTime) stay universal in PLANT_TYPES; only
+// the cosmetics are reskinned per world (see world.js). Falls back to the base
+// type if a world omits that tier. Rendering, the HUD selector, the shop, and
+// celebrations all read cosmetics through this.
+export function plantCosmetic(typeId) {
+  const base = TYPE_BY_ID[typeId] || PLANT_TYPES[0];
+  const tier = TIER_BY_ID[typeId];
+  const skin = tier != null ? (activeWorld().plants || [])[tier] : null;
+  return {
+    name: (skin && skin.name) || base.name,
+    emoji: (skin && skin.emoji) || base.emoji,
+    color: (skin && skin.color) || base.color,
+  };
+}
 
 // Types the player can plant right now (reached their stage).
 export function availableTypes(state) {
@@ -402,10 +420,11 @@ export const MIXED_MUL = 1.3;     // yield multiplier for a mixed grove
 
 function neighbourPlants(state, plot) {
   const out = [];
+  const { cols, rows } = activeDims();
   for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
     const c = plot.col + dc, r = plot.row + dr;
-    if (c < 0 || r < 0 || c >= GRID.cols || r >= GRID.rows) continue;
-    const n = state.plots[r * GRID.cols + c];
+    if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+    const n = state.plots[r * cols + c];
     if (n && n.plant && n.plant.status === 'alive') out.push(n.plant);
   }
   return out;

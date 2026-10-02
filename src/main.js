@@ -1,7 +1,8 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
-import { MAX_DPR, CONTROL_BAND, GRID } from './config.js';
+import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt, iconAt, tileCenter } from './state.js';
+import { activeDims } from './world.js';
 import { computeLayout, L } from './layout.js';
 import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, doPrestige, claimDaily, markDailyStart } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
@@ -41,7 +42,7 @@ function manStandAt(idx) {
   return { x: t.x, y: t.y + L.th * 0.2 };
 }
 function manRest() {
-  const t = tileCenter(0, GRID.rows - 1);
+  const t = tileCenter(0, activeDims().rows - 1);
   return { x: t.x - L.tw * 0.5, y: t.y + L.th * 0.6 };
 }
 

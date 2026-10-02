@@ -1,9 +1,9 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // Draws the world in screen pixels using the adaptive layout (see layout.js).
-import { GRID } from './config.js';
 import { tileCenter, plantHeight } from './state.js';
 import { L } from './layout.js';
-import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus } from './game.js';
+import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus, plantCosmetic } from './game.js';
+import { activeDims, activeWorld } from './world.js';
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -40,18 +40,12 @@ function tileBlock(ctx, cx, cy, tw, th, depth, topC, leftC, rightC) {
 
 const lerpArr = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
-// Scene palette per stage (aligned to STAGES): sky and ground gradients that
-// carry the world from bare desert to lush rainforest.
-const PALETTES = [
-  { skyTop: [143, 183, 214], skyBot: [231, 214, 168], grTop: [217, 181, 121], grBot: [184, 137, 77] }, // desert
-  { skyTop: [150, 190, 205], skyBot: [214, 210, 175], grTop: [178, 176, 112], grBot: [140, 140, 80] }, // scrubland
-  { skyTop: [140, 190, 210], skyBot: [200, 216, 182], grTop: [122, 165, 82], grBot: [86, 120, 56] },   // grassland
-  { skyTop: [128, 186, 206], skyBot: [186, 210, 182], grTop: [92, 142, 68], grBot: [60, 100, 48] },     // dry woodland
-  { skyTop: [120, 180, 200], skyBot: [172, 206, 186], grTop: [58, 120, 58], grBot: [36, 86, 42] },      // rainforest
-];
+// Scene palette per stage comes from the ACTIVE world (see world.js): sky and
+// ground gradients that carry each place from its barren start to lush.
 
 // Interpolated scene colors for the current environment average.
 function sceneColors(avg) {
+  const PALETTES = activeWorld().palettes;
   let i = 0;
   while (i < STAGES.length - 1 && avg >= STAGES[i + 1].min) i++;
   const hi = Math.min(i + 1, STAGES.length - 1);
@@ -406,7 +400,7 @@ export function renderScene(ctx, state, now = 0, man = null) {
     const bob = man.moving ? Math.abs(Math.sin(time * 14)) * 2 * unit : 0;
     drawFigure(ctx, man.x, man.y - bob, 1.3 * unit, man.facing);
   } else {
-    const fl = tileCenter(0, GRID.rows - 1);
+    const fl = tileCenter(0, activeDims().rows - 1);
     drawFigure(ctx, fl.x - tw * 0.5, fl.y + th * 0.6, 1.3 * unit);
   }
 
@@ -733,6 +727,7 @@ function drawPlant(ctx, cx, baseY, plant) {
   }
 
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
+  const skinColor = plantCosmetic(plant.typeId).color; // per-world reskin
   const s = plantHeight(plant); // already size-varied by plant.v
   const v = plant.v ?? 0.5;
   const v2 = (v * 7.3) % 1;
@@ -747,7 +742,7 @@ function drawPlant(ctx, cx, baseY, plant) {
   ctx.fill();
 
   // Thirsty plants wilt; otherwise each plant gets a slight brightness shift.
-  const color = plant.thirsty ? wilt(type.color) : tint(type.color, (v2 - 0.5) * 0.3);
+  const color = plant.thirsty ? wilt(skinColor) : tint(skinColor, (v2 - 0.5) * 0.3);
   (SHAPES[type.id] || SHAPES.seed)(ctx, jx, jy, s, color, darken(color, 0.62));
   ctx.globalAlpha = 1;
 }

@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, SHOVEL } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, plantCosmetic, SHOVEL } from './game.js';
 
 export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings, onOpenGrove }) {
   const root = document.getElementById('hud');
@@ -112,7 +112,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   function rebuildTypes(avail) {
     types.innerHTML = avail.map((t) => `
       <button type="button" data-type="${t.id}">
-        <span class="t-name">${t.name}</span><span class="t-cost">${t.cost}💧</span>
+        <span class="t-name">${plantCosmetic(t.id).name}</span><span class="t-cost">${t.cost}💧</span>
       </button>`).join('')
       + `<button type="button" data-type="${SHOVEL}" class="t-shovel"><span class="t-name">🪏 Remove</span></button>`;
     lastTypeCount = avail.length;

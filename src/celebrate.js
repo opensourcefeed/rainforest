@@ -2,7 +2,7 @@
 // stageReached), so it's a memorable payoff, not a nag. The caller pauses the
 // game while it's shown and resumes on Continue.
 import { sfx } from './sound.js';
-import { STAGES, PLANT_TYPES } from './game.js';
+import { STAGES, PLANT_TYPES, plantCosmetic } from './game.js';
 
 const FLAVOR = {
   Scrubland: { emoji: '🌵', line: 'Cacti take hold and shade begins to cool the ground.' },
@@ -57,8 +57,9 @@ export function createCelebration({ onContinue }) {
       // Which plant type this stage unlocks (minStage === stage index).
       const stageIdx = STAGES.findIndex((s) => s.name === milestone.name);
       const unlocked = PLANT_TYPES.find((t) => t.minStage === stageIdx);
+      const skin = unlocked ? plantCosmetic(unlocked.id) : null;
       const unlockHtml = (unlocked && stageIdx > 0)
-        ? `<div class="celebrate-unlock">${unlocked.emoji} New plant unlocked: <b>${unlocked.name}</b> · ${unlocked.cost}💧</div>`
+        ? `<div class="celebrate-unlock">${skin.emoji} New plant unlocked: <b>${skin.name}</b> · ${unlocked.cost}💧</div>`
         : '';
       overlay.innerHTML = `
         <div class="confetti">${confetti()}</div>

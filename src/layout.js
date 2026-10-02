@@ -3,7 +3,8 @@
 // canvases fill the window, the horizon shifts by aspect, and the iso grid sizes
 // and centers itself to the available ground area. Tile COUNT stays fixed (so
 // balance is unchanged) — only spacing/scale adapt.
-import { GRID, CONTROL_BAND } from './config.js';
+import { CONTROL_BAND } from './config.js';
+import { activeDims } from './world.js';
 
 export const L = {
   w: 0, h: 0,           // viewport CSS px
@@ -28,7 +29,7 @@ export function computeLayout(winW, winH, reserveCss) {
   const hFrac = aspect > 1.2 ? 0.40 : 0.46;
   L.horizonY = Math.round(winH * hFrac);
 
-  const { cols, rows } = GRID;
+  const { cols, rows } = activeDims();
   const availW = winW - 40;
   const bandTop = L.horizonY + 20;
   const bandBottom = winH - reserveCss;
