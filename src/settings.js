@@ -23,6 +23,7 @@ export function createSettings({ onReplayStory, onReset }) {
         <button type="button" class="set-btn" id="set-story">Replay the story</button>
         <button type="button" class="set-btn set-danger" id="set-reset">Reset forest</button>
         <p class="set-about">Rainforest · a Tahrik Studio game about bringing the desert back to life, one tree at a time.</p>
+        <p class="set-version" id="set-version">Version —</p>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -30,7 +31,22 @@ export function createSettings({ onReplayStory, onReset }) {
   const soundBtn = overlay.querySelector('#set-sound');
   const vol = overlay.querySelector('#set-volume');
   const resetBtn = overlay.querySelector('#set-reset');
+  const versionEl = overlay.querySelector('#set-version');
   let resetArmed = null;
+
+  // Deploy stamps version.json (commit + date) into the published site; show it
+  // so the deployed build is identifiable. Absent locally → "dev build".
+  function loadVersion() {
+    versionEl.textContent = 'Version · checking…';
+    fetch('version.json', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v) => {
+        versionEl.textContent = (v && v.commit)
+          ? `Version ${v.date || ''} · ${v.commit}`.replace('  ', ' ')
+          : 'Dev build (unreleased)';
+      })
+      .catch(() => { versionEl.textContent = 'Dev build (unreleased)'; });
+  }
 
   const close = () => { overlay.hidden = true; disarm(); };
   const sync = () => {
@@ -62,5 +78,5 @@ export function createSettings({ onReplayStory, onReset }) {
     onReset();
   });
 
-  return { open() { sync(); overlay.hidden = false; } };
+  return { open() { sync(); loadVersion(); overlay.hidden = false; } };
 }

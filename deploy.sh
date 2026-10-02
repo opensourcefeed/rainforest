@@ -49,6 +49,11 @@ cp .nojekyll "$BUILD_DIR/"
 cp grove.json "$BUILD_DIR/"                       # Real Grove data
 [ -d grove ] && cp -r grove "$BUILD_DIR/"          # Real Grove photos (optional)
 
+# Stamp the published version so Settings can show which build is live. Only the
+# deployed copy gets it; local dev has no version.json → Settings shows "dev build".
+COMMIT_DATE="$(git show -s --format=%cd --date=short HEAD)"
+printf '{"commit":"%s","date":"%s"}\n' "$SRC_SHA" "$COMMIT_DATE" > "$BUILD_DIR/version.json"
+
 # --- 4. Publish it to gh-pages as a single clean commit -------------------
 # A throwaway repo keeps gh-pages history-light; force-push since it is a
 # generated artifact, not source.
