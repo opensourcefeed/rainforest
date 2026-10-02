@@ -187,8 +187,11 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       daily/quests) + per-world `worlds` map keyed by `worldId`; freshPlots/activeSnapshot/
       applySnapshot helpers; loadGame migrates old flat saves. Verified headless (round-trip,
       multi-world, migration). Still one active world — invisible.
-- [ ] **A4 — completeWorld** (evolve doPrestige; keep water/upgrades, stamp restoredDate, switch).
-- [ ] **A5 — shop "Restore the next land" entry + confirm.**
+- [x] **A4 — completeWorld** (evolve doPrestige; keep water/upgrades/legacy, stamp restoredDate,
+      snapshot the restored world, switch to next via applySnapshot). Verified headless.
+- [x] **A5 — restore-next UI.** Shop card → "Restore the Next Land → <place, region>" (or
+      "Complete This Forest"); prestige modal reveals the next place + blurb, states the global
+      pool is kept and the forest stays behind growing water. Folded into A4 so no stale copy ships.
 - [ ] **A6 — per-world twist** in survival/growth/thirst formulas.
 - [ ] **A7 — idle income** from restored worlds (live + offline) + HUD passive rate.
 - [ ] **A8 — World Map overlay = switch hub** (🗺️).

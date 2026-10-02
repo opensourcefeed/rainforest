@@ -394,9 +394,16 @@ export function stageProgress(state) {
   return { nextName: next.name, pct };
 }
 
+// The active world's starting "twist". Falls back to neutral values.
+export function worldMods() {
+  return activeWorld().mods || { survivalBonus: 0, growthMul: 1, thirstMul: 1 };
+}
+
 export function survivalChance(state) {
   const bonus = upgradeLevel(state, 'survival') * 0.04;
-  return Math.min(0.97, BASE_SURVIVAL + avgMeter(state) * (MAX_SURVIVAL - BASE_SURVIVAL) + bonus);
+  const world = worldMods().survivalBonus || 0; // per-world harshness/ease
+  return Math.min(0.97, Math.max(0.05,
+    BASE_SURVIVAL + avgMeter(state) * (MAX_SURVIVAL - BASE_SURVIVAL) + bonus + world));
 }
 
 // Attempt to plant a seed in plot `index`. Returns true if it happened.
@@ -544,7 +551,8 @@ export function actOnTile(state, index) {
 export function updateWorld(state, dt) {
   const m = state.meters;
   const lb = legacyBonus(state);
-  const growthMul = 1 + upgradeLevel(state, 'growth') * UP_GROWTH;
+  const mods = worldMods();
+  const growthMul = (1 + upgradeLevel(state, 'growth') * UP_GROWTH) * (mods.growthMul || 1);
   const yieldMulUp = (1 + upgradeLevel(state, 'yield') * UP_YIELD) * lb;
   const raining = !!(state.rain && state.rain.intensity > 0.3);
   state.water += (WATER_REGEN_PER_SEC + upgradeLevel(state, 'collect') * 0.03) * dt; // trickle
@@ -588,7 +596,7 @@ export function updateWorld(state, dt) {
       // greens the land a little, so neglect never hard-stalls progression.
       if (p.thirsty && raining) p.thirsty = false;
       if (!p.thirsty && !raining && p.growth >= 1
-          && Math.random() < THIRST_RATE * (1 - m.humidity * 0.7) * dt) {
+          && Math.random() < THIRST_RATE * (mods.thirstMul || 1) * (1 - m.humidity * 0.7) * dt) {
         p.thirsty = true;
       }
       const careMul = p.thirsty ? 0.35 : 1;
