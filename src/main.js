@@ -382,6 +382,25 @@ function endPointer(e) {
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
 
+// --- Non-touch zoom: mouse wheel + trackpad pinch -------------------------
+// Both arrive as `wheel` events (a trackpad pinch is a wheel with ctrlKey set),
+// so one handler covers both. Zoom is cursor-anchored and incremental via the
+// same focal math as pinch. We preventDefault over the canvas so the browser
+// doesn't page-zoom (ctrl+wheel) or rubber-band; zoom only applies when the grid
+// can actually zoom (maxZoom > 1).
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (L.maxZoom <= 1) return;
+  const p = eventToScreen(e);
+  // Normalise line-mode deltas (Firefox mouse wheel) to ~pixels.
+  const dy = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+  // Scroll up / pinch apart (dy < 0) zooms in. Trackpad pinch sends finer deltas,
+  // so it gets a larger per-unit factor to stay responsive. Exponential keeps the
+  // step proportional, so zooming feels even across the range.
+  const k = e.ctrlKey ? 0.01 : 0.0015;
+  setZoom(L.zoom * Math.exp(-dy * k), p.x, p.y);
+}, { passive: false });
+
 // Web Audio must start from a user gesture — resume on any press (incl. HUD).
 addEventListener('pointerdown', () => { initAudio(); resumeAudio(); });
 
