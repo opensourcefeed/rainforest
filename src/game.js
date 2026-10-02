@@ -137,8 +137,28 @@ export function countTier(state, minTier) {
 }
 
 function makeQuest(tmpl, state) {
-  const goal = tmpl.goals[Math.floor(Math.random() * tmpl.goals.length)];
+  let goals = tmpl.goals;
+  // For "have N at once" goals, prefer one above the current count so it's never
+  // already satisfied on assignment (free claim); fall back to the hardest.
+  if (tmpl.abs) {
+    const cur = tmpl.metric(state);
+    const harder = goals.filter((g) => g > cur);
+    goals = harder.length ? harder : [goals[goals.length - 1]];
+  }
+  const goal = goals[Math.floor(Math.random() * goals.length)];
   return { key: tmpl.key, goal, base: tmpl.abs ? 0 : tmpl.metric(state) };
+}
+
+// Replace any active quest whose eligibility no longer holds (e.g. a Collect
+// quest once rain has retired the Collect button), so no slot dead-locks.
+export function pruneQuests(state) {
+  (state.quests || []).forEach((q, i) => {
+    const t = QUEST_POOL.find((x) => x.key === q.key);
+    if (!t || !t.eligible || t.eligible(state)) return;
+    const others = new Set(state.quests.filter((_, j) => j !== i).map((x) => x.key));
+    const cands = QUEST_POOL.filter((c) => !others.has(c.key) && (!c.eligible || c.eligible(state)));
+    if (cands.length) state.quests[i] = makeQuest(cands[Math.floor(Math.random() * cands.length)], state);
+  });
 }
 export function initQuests(state) {
   if (!state.quests) state.quests = [];
@@ -193,10 +213,6 @@ export function unlockedCount(state) {
 export function unlockCost(state) {
   const beyond = Math.max(0, unlockedCount(state) - STARTER_PLOTS);
   return Math.ceil(UNLOCK_BASE * Math.pow(UNLOCK_GROWTH, beyond));
-}
-
-export function allUnlocked(state) {
-  return unlockedCount(state) >= state.plots.length;
 }
 
 // Try to unlock plot `index`. Handles its own feedback; returns true on success.
@@ -334,11 +350,6 @@ export function currentStage(state) {
   let index = 0;
   for (let i = 0; i < STAGES.length; i++) if (a >= STAGES[i].min) index = i;
   return { index, name: STAGES[index].name };
-}
-
-// 0..1 greening progress used to tint the scene from desert toward scrubland.
-export function greening(state) {
-  return Math.min(1, avgMeter(state) / 0.4);
 }
 
 // Progress toward the next stage: { nextName, pct } where pct is 0..1 of the
@@ -548,34 +559,40 @@ export function updateWorld(state, dt) {
       const bonus = tileBonus(state, plot);
 
       // Care: rain waters everything; in dry weather a mature plant can get
-      // thirsty and pauses (no growth, yield, greening or fruit) until watered.
+      // thirsty. A thirsty plant SLOWS (and stops yielding water/fruit) but still
+      // greens the land a little, so neglect never hard-stalls progression.
       if (p.thirsty && raining) p.thirsty = false;
       if (!p.thirsty && !raining && p.growth >= 1
           && Math.random() < THIRST_RATE * (1 - m.humidity * 0.7) * dt) {
         p.thirsty = true;
       }
-      if (p.thirsty) continue;
+      const careMul = p.thirsty ? 0.35 : 1;
 
       const wasGrowing = p.growth < 1;
-      p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul * (1 + SHADE_BONUS * bonus.shade));
+      p.growth = Math.min(1, p.growth + dt / type.growTime * growthMul * (1 + SHADE_BONUS * bonus.shade) * careMul);
       if (wasGrowing && p.growth >= 1 && state.events && state.events.length < 40) state.events.push('mature');
       // Diminishing returns: greening already-lush land is much harder, so
       // early recovery is fast (the hook) and late stages take real work.
-      const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb;
+      const g = METER_GAIN * dt * (0.3 + 0.7 * p.growth) * type.meterMul * lb * careMul;
       m.soil = Math.min(1, m.soil + g * (1 - m.soil) ** 3);
       m.shade = Math.min(1, m.shade + g * (1 - m.shade) ** 3);
       m.humidity = Math.min(1, m.humidity + g * (1 - m.humidity) ** 3);
-      // Grove water yield — grows with the plant, humidity, tier, and upgrades.
-      state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul * yieldMulUp
-        * (bonus.mixed ? MIXED_MUL : 1);
 
-      // Harvest: grown fruiting plants ripen a fruit to tap.
-      if (type.yieldMul > 0 && p.growth >= 1 && !p.ripe) {
-        p.fruit = (p.fruit || 0) + dt / FRUIT_TIME;
-        if (p.fruit >= 1) { p.ripe = true; p.fruit = 0; }
+      if (!p.thirsty) {
+        // Grove water yield — grows with the plant, humidity, tier, and upgrades.
+        state.water += WATER_YIELD * dt * p.growth * m.humidity * type.yieldMul * yieldMulUp
+          * (bonus.mixed ? MIXED_MUL : 1);
+        // Harvest: grown fruiting plants ripen a fruit to tap.
+        if (type.yieldMul > 0 && p.growth >= 1 && !p.ripe) {
+          p.fruit = (p.fruit || 0) + dt / FRUIT_TIME;
+          if (p.fruit >= 1) { p.ripe = true; p.fruit = 0; }
+        }
       }
     }
   }
 
+  const wasRainUnlocked = state.rain.unlocked;
   updateRain(state, dt);
+  // When rain unlocks, retire any now-impossible quests (e.g. Collect water).
+  if (!wasRainUnlocked && state.rain.unlocked) pruneQuests(state);
 }
