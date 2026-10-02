@@ -227,4 +227,18 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
 - [x] **B5 — bigger per-world grids.** 4×5 → 5×6 → 6×7 → 6×8. Sim: Rainforest 12.3→14.3m across
       worlds (normalised pacing holds); world-0 balance sim byte-identical.
 
-Next: real-device playtest of pan/zoom + big grids.
+## Phase C — natural world-completion flow
+World completion was buried (a card inside the Upgrades shop) and showed a redundant
+confirm-then-celebrate double popup. Making it feel like an idle-game prestige climax.
+- [x] **P1 — single auto-raised completion modal.** Reaching Rainforest now auto-raises ONE
+      "this land is whole" modal (celebrates + offers the next step in one): primary "Carry on
+      to <Next>" runs completeWorld and drops into the next land with a toast; "Stay a while"
+      dismisses. Removed the separate prestige confirm modal and the generic Rainforest stage
+      pop. Per-world `completionPromptSeen` (persisted) makes it auto-pop once, not every resume.
+      Shop card re-opens the same modal. Economy unchanged (balance sim identical; the stage
+      water bonus is still granted).
+- [ ] **P2 — persistent "carry on" banner.** Glowing HUD banner when eligible + dismissed,
+      re-opening the completion modal (replaces digging in the Upgrades shop). Safe-area aware.
+- [ ] **P3 — copy/sound polish + cleanup.** Finalize wording; delete dead prestige.js.
+
+Next: P2 (persistent banner), then real-device playtest of pan/zoom + big grids.

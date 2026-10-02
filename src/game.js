@@ -636,7 +636,14 @@ export function updateWorld(state, dt) {
     state.stageReached += 1;
     const bonus = Math.round(15 * Math.pow(3, state.stageReached));
     state.water += bonus;
-    state.milestone = { name: STAGES[state.stageReached].name, bonus };
+    // Reaching the FINAL stage (Rainforest) means the world is complete. Skip
+    // the generic stage celebration here — main.js detects canPrestige() and
+    // raises the richer "this land is whole, carry on" completion modal instead
+    // (one modal at the climax, not a stage pop followed by a prestige prompt).
+    // The water bonus is still granted so the economy is unchanged.
+    if (state.stageReached < STAGES.length - 1) {
+      state.milestone = { name: STAGES[state.stageReached].name, bonus };
+    }
   }
 
   for (const plot of state.plots) {

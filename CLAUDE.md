@@ -1,3 +1,71 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+Zero-build: vanilla JS + ES modules + Canvas, no dependencies, no `npm install`. Node only.
+
+```
+node serve.mjs [port]          # dev server (default :5173); open the printed URL
+node tools/balance-sim.mjs     # headless economy/pacing sim (a bot plays the full loop)
+./deploy.sh "commit message"   # commit tracked changes, push main to both remotes, publish gh-pages
+./deploy.sh                    # no commit; push current main + deploy
+```
+
+- No test suite or linter. **Verification is the balance sim + a browser/device playtest** — the
+  sim is only a proxy; the real go/no-go is a device playtest (see PROGRESS.md).
+- In-game: press `D` (or tap the top-left corner) to toggle the debug overlay (viewport, DPR,
+  aspect, safe-area insets, meter values, FPS).
+- `deploy.sh` pushes `main` to two remotes — `origin` (GitLab, source) and `github` (GitHub,
+  opensourcefeed org) — then force-pushes a clean static build to the `gh-pages` branch on
+  `github`. Live at `https://www.opensourcefeed.org/<repo-name>/` (asset paths are relative, so
+  the subpath needs no config). `grove.json` + `grove/` are published alongside the game.
+
+## Architecture
+
+A fixed-timestep Canvas game. [src/main.js](src/main.js) is the app shell; it owns the
+adaptive layout, the 60 Hz fixed-timestep loop, pointer input (tap / drag-pan / pinch-zoom),
+the debug overlay, and wiring of all the UI panels. It is the only file that touches the DOM
+canvases and the window.
+
+**Data vs. verbs vs. pixels — the central split:**
+- [src/state.js](src/state.js) — the state shape (`createState`) and **geometry** (iso
+  `tileCenter`, inverse hit-testing `plotAt`/`iconAt`, `plantHeight`). Geometry lives here so
+  render and input share one source of truth. Also holds the per-world snapshot helpers
+  (`activeSnapshot`/`applySnapshot`).
+- [src/game.js](src/game.js) — the **rules and the per-frame `updateWorld`**: plant types,
+  survival rolls, the three hidden meters (soil/shade/humidity), growth, stages, rain, water
+  yield, upgrades, quests, adjacency bonuses, harvest/care, and world completion/switching.
+  `actOnTile`/`tileAction` are the single entry point for acting on a tile.
+- [src/render.js](src/render.js) — draws everything to canvas (scene + plants + fx); reads
+  cosmetics and geometry, never mutates game state. [src/layout.js](src/layout.js) (exported
+  singleton `L`) computes tile size, grid origin, and the Phase B camera (pan/zoom) each layout.
+
+**Key invariants when editing:**
+- **Design units adapt to the screen.** Nothing is a fixed pixel box: `L` is recomputed on every
+  resize/visualViewport change. Use `L.*` and `tileCenter`/`plotAt`, never raw coordinates. See
+  the responsive constraints in the design doc below — they are hard requirements from commit 1.
+- **Global vs. per-world state.** Water, upgrades, legacy, stats, daily, and quests are GLOBAL
+  (shared across worlds). Meters, plots, stageReached, selectedType, restoredDate are PER-WORLD:
+  they live on `state.*` for the active world and are snapshotted into `state.worlds[id]` on save
+  or when switching. [src/world.js](src/world.js) is **data + accessors only** (per-world
+  palettes, plant reskins, grid size, twist mods) and deliberately imports nothing from
+  game/state to avoid a cycle — gameplay stats stay universal in `game.PLANT_TYPES`; only
+  cosmetics are reskinned per world via `game.plantCosmetic()`.
+- **Offline progress** ([src/save.js](src/save.js)): the WebView doesn't run in the background,
+  so idle growth is replayed on load by stepping `updateWorld` from the saved timestamp (capped).
+  Persistence is localStorage for now (native storage comes in Phase 2); every storage access is
+  wrapped in try/catch and the game must run if it throws. `loadGame` migrates old flat saves.
+- **UI panels** (hud, shop, quests, prestige, settings, grove, worldmap, celebrate, onboarding,
+  daily, loader) are `create*(…callbacks)` factories that build their own DOM and expose
+  `open`/`refresh`/`update`. main.js passes callbacks in; panels never reach into the loop.
+
+Follow the **vertical-slice working method** in the design doc below and keep PROGRESS.md
+current — it is the resume point and the slice ledger. Never commit a broken build.
+
+---
+
 # Eco Tycoon Game (working title) — Tahrik Studio
 
 ## Concept

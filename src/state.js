@@ -31,6 +31,7 @@ export function createState() {
     worldId: FIRST_WORLD_ID,
     worlds: {}, // { [id]: perWorldSnapshot } — filled on save/switch
     restoredDate: null, // local YYYY-MM-DD this (active) world was restored, else null
+    completionPromptSeen: false, // has the "this land is whole" modal auto-popped for this world
     water: START_WATER, // main early currency (jugs). Renewable via rain later.
     // Hidden environment meters, 0..1. Living plants raise them; survival
     // chance reads from them, so the desert bootstraps itself.
@@ -71,6 +72,7 @@ export function activeSnapshot(state) {
     stageReached: state.stageReached,
     selectedType: state.selectedType,
     restoredDate: state.restoredDate || null,
+    completionPromptSeen: !!state.completionPromptSeen,
   };
 }
 
@@ -83,6 +85,7 @@ export function applySnapshot(state, id, snap) {
   state.stageReached = Number.isInteger(snap.stageReached) ? snap.stageReached : 0;
   state.selectedType = typeof snap.selectedType === 'string' ? snap.selectedType : 'seed';
   state.restoredDate = snap.restoredDate || null;
+  state.completionPromptSeen = !!snap.completionPromptSeen;
   // Rain + transient effects reset; rain re-derives from humidity next frame.
   state.rain = { unlocked: false, active: false, timer: 0, intensity: 0 };
   state.fx = [];

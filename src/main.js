@@ -1,7 +1,7 @@
 // Rainforest — app shell: layout, fixed-timestep loop, input, debug overlay.
 // Game world lives in state.js / render.js.
 import { MAX_DPR, CONTROL_BAND } from './config.js';
-import { plotAt, iconAt, tileCenter } from './state.js';
+import { plotAt, iconAt, tileCenter, activeSnapshot } from './state.js';
 import { activeDims } from './world.js';
 import { computeLayout, applyZoomPan, clampCam, L } from './layout.js';
 import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, completeWorld, claimDaily, markDailyStart } from './game.js';
@@ -9,14 +9,13 @@ import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
 import { createQuests } from './quests.js';
-import { createPrestige } from './prestige.js';
 import { initAudio, resumeAudio, setRain, sfx } from './sound.js';
 import { loadGame, saveGame, clearSave } from './save.js';
 import { createSettings } from './settings.js';
 import { createGrove } from './grove.js';
 import { createWorldMap } from './worldmap.js';
-import { switchWorld, worldIncome, legacyBonus } from './game.js';
-import { worldById } from './world.js';
+import { switchWorld, worldIncome, legacyBonus, canPrestige, prestigeGain } from './game.js';
+import { worldById, nextWorldId } from './world.js';
 import { showDaily } from './daily.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
@@ -52,28 +51,52 @@ function manRest() {
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
 const localDay = (t) => new Date(t).toLocaleDateString('en-CA'); // YYYY-MM-DD
-const prestige = createPrestige(state, () => {
+
+// Restore the current world and carry on to the next land. Primary action of the
+// completion modal (and the shop card). There is NO second modal: the completion
+// modal already celebrated, so we drop straight into the next land with a toast.
+function doCompleteWorld() {
   const res = completeWorld(state, localDay(Date.now()));
-  if (res) {
-    // The forest moved to a new (or restored) land: reset the walker and relayout.
-    man.queue.length = 0; man.lastIdx = null; man.moving = false;
-    scheduleLayout();
-    save();
-    // Big payoff: pause and show the world-restored celebration.
-    const restored = state.worlds[res.restoredId];
-    const next = res.nextId ? worldById(res.nextId) : null;
-    paused = true;
-    celebrate.showWorld({
-      restoredPlace: worldById(res.restoredId).place,
-      income: worldIncome(restored, legacyBonus(state)),
-      gain: res.gain,
+  if (!res) { paused = false; return; }
+  // The forest moved to a new (or restored) land: reset the walker and relayout.
+  man.queue.length = 0; man.lastIdx = null; man.moving = false;
+  scheduleLayout();
+  save();
+  paused = false;
+  const next = res.nextId ? worldById(res.nextId) : null;
+  showToast(next
+    ? `🌍 ${worldById(res.restoredId).place} restored · now tending ${next.place}`
+    : '🌍 Every land restored — the planet is green again.');
+}
+
+// Raise the single "this land is whole" completion modal — one modal that both
+// celebrates the restored land and offers the next step. The figures are
+// projected (nothing has happened yet): what legacy/income restoring WOULD grant.
+function showCompletion() {
+  if (!canPrestige(state)) return;
+  const here = worldById(state.worldId);
+  const nextId = nextWorldId(state.worldId);
+  const next = nextId ? worldById(nextId) : null;
+  // worldIncome() needs a restoredDate, so compute on a throwaway snapshot to
+  // preview the water this land would keep producing once restored.
+  const snap = activeSnapshot(state); snap.restoredDate = 'projected';
+  const income = worldIncome(snap, legacyBonus(state));
+  const gain = prestigeGain(state);
+  const cur = state.legacy || 0;
+  const bonusNow = Math.round((legacyBonus(state) - 1) * 100);
+  const bonusAfter = Math.round(((1 + (cur + gain) * 0.03) - 1) * 100);
+  paused = true;
+  celebrate.showComplete(
+    {
+      restoredPlace: here.place, income, gain, bonusNow, bonusAfter,
       nextPlace: next ? next.place : null,
       nextRegion: next ? next.region : null,
       nextBlurb: next ? next.blurb : null,
-    });
-  }
-});
-const shop = createShop(state, () => sfx.upgrade(), () => prestige.show());
+    },
+    { onConfirm: doCompleteWorld, onStay() { paused = false; } },
+  );
+}
+const shop = createShop(state, () => sfx.upgrade(), () => showCompletion());
 const quests = createQuests(state, () => sfx.upgrade());
 // Saving is suspended while a reset is in flight, so the unload handlers can't
 // write the old forest back after we clear it.
@@ -238,6 +261,15 @@ function frame(now) {
   if (state.milestone && !paused) {
     paused = true;
     celebrate.show(state.milestone);
+  }
+  // World complete: the first time a world reaches Rainforest, auto-raise the
+  // completion modal (once per world). If dismissed ("Stay a while") the player
+  // re-opens it from the shop card / (P2) the persistent banner.
+  // completionPromptSeen is per-world and persisted, so it won't re-pop on resume.
+  else if (!paused && !state.completionPromptSeen && canPrestige(state)) {
+    state.completionPromptSeen = true;
+    save();
+    showCompletion();
   }
   updateDebug(now);
   requestAnimationFrame(frame);

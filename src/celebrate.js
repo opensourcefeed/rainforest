@@ -85,39 +85,53 @@ export function createCelebration({ onContinue }) {
       }, { once: true });
     },
 
-    // A bigger payoff than a stage: a whole world restored. `info` is built by
-    // main.js: { restoredPlace, income, gain, nextPlace, nextRegion, nextBlurb }.
-    // nextPlace is null when the final world has been restored.
-    showWorld(info) {
+    // World complete — the climax of a world, reached automatically when it hits
+    // Rainforest. This single modal BOTH celebrates the restored land AND offers
+    // the next step (no separate confirm-then-celebrate pair): the primary button
+    // performs the restoration and carries on; "Stay a while" dismisses so the
+    // player can keep growing this land (more legacy / income when they do commit).
+    //
+    // `info` is built by main.js (projected, since nothing has happened yet):
+    //   { restoredPlace, income, gain, bonusNow, bonusAfter,
+    //     nextPlace, nextRegion, nextBlurb }   (next* null on the final world).
+    // `handlers` = { onConfirm, onStay }.
+    showComplete(info, { onConfirm, onStay }) {
       const hasNext = !!info.nextPlace;
       const nextHtml = hasNext
-        ? `<div class="celebrate-unlock">🌏 New land: <b>${info.nextPlace}</b>, ${info.nextRegion}
+        ? `<div class="celebrate-unlock">🌏 Next land: <b>${info.nextPlace}</b>, ${info.nextRegion}
              <br><small>${info.nextBlurb}</small></div>`
-        : `<div class="celebrate-unlock">🌏 <b>Every land restored.</b> The planet is green again.</div>`;
+        : `<div class="celebrate-unlock">🌏 <b>The last land.</b> Restore it and the planet is green again.</div>`;
       overlay.innerHTML = `
         <div class="confetti">${confetti()}</div>
         <div class="celebrate-card">
           <div class="celebrate-emoji">🌍</div>
-          <div class="celebrate-kicker">World restored</div>
+          <div class="celebrate-kicker">This land is whole</div>
           <h2 class="celebrate-title">${info.restoredPlace}</h2>
-          <p class="celebrate-line">You brought this whole land back to life.</p>
-          <p class="celebrate-tip">🌱 It now grows water on its own · +${info.income.toFixed(1)}/s 💧</p>
+          <p class="celebrate-line">You brought a whole land back to life.</p>
+          <p class="celebrate-tip">🌱 Restore it and it keeps growing water on its own · +${info.income.toFixed(1)}/s 💧</p>
           ${nextHtml}
-          <div class="celebrate-reward">Reward: +${info.gain} 🌿 legacy</div>
+          <div class="celebrate-reward">+${info.gain} 🌿 legacy · growth &amp; yield +${info.bonusNow}% → +${info.bonusAfter}%</div>
           <div class="celebrate-real"><span>🌱 In the real world</span>${
             hasNext
               ? 'One land healed here. Go plant one real tree — it outlives this whole game.'
               : 'You finished the game. The real forest is still waiting — plant a tree today.'
           }</div>
-          <button type="button" class="celebrate-btn">${hasNext ? `Begin ${info.nextPlace}` : 'Finish'}</button>
+          <div class="celebrate-btns">
+            <button type="button" class="celebrate-stay">Stay a while</button>
+            <button type="button" class="celebrate-btn celebrate-go">${hasNext ? `Carry on to ${info.nextPlace}` : 'Restore the final forest'}</button>
+          </div>
         </div>`;
       overlay.hidden = false;
       sfx.fanfare();
-      overlay.querySelector('.celebrate-btn').addEventListener('click', () => {
+      const dismiss = () => { overlay.hidden = true; overlay.innerHTML = ''; };
+      overlay.querySelector('.celebrate-go').addEventListener('click', () => {
         sfx.advance();
-        overlay.hidden = true;
-        overlay.innerHTML = '';
-        onContinue();
+        dismiss();
+        onConfirm();
+      }, { once: true });
+      overlay.querySelector('.celebrate-stay').addEventListener('click', () => {
+        dismiss();
+        onStay();
       }, { once: true });
     },
   };

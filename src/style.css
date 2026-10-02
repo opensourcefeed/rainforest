@@ -181,6 +181,23 @@ html, body {
 }
 .celebrate-btn:active { filter: brightness(0.95); transform: translateY(1px); }
 
+/* Completion modal: primary "carry on" + secondary "stay a while". */
+.celebrate-btns { display: flex; gap: 10px; margin-top: 18px; }
+.celebrate-btns .celebrate-btn { margin-top: 0; width: auto; flex: 2; }
+.celebrate-stay {
+  flex: 1;
+  min-height: 52px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.celebrate-stay:active { filter: brightness(0.95); transform: translateY(1px); }
+
 /* Confetti */
 .confetti { position: absolute; inset: 0; pointer-events: none; }
 .confetti-piece {
