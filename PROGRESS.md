@@ -194,6 +194,8 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       pool is kept and the forest stays behind growing water. Folded into A4 so no stale copy ships.
 - [x] **A6 — per-world twist.** worldMods() feeds survivalChance (+survivalBonus) and updateWorld
       (×growthMul, ×thirstMul). World 0 neutral (balance unchanged); Sahel harsher, Atlantic easier.
-- [ ] **A7 — idle income** from restored worlds (live + offline) + HUD passive rate.
+- [x] **A7 — idle income.** worldIncome()/totalIdleIncome() — restored worlds pour water into
+      the global pool (active world excluded to avoid double count); added in updateWorld (live +
+      offline) and folded into waterRate so the HUD +/s shows it. Verified headless.
 - [ ] **A8 — World Map overlay = switch hub** (🗺️).
 - [ ] **A9 — world-complete celebration.**

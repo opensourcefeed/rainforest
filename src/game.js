@@ -61,6 +61,16 @@ export function prestigeGain(state) {
   return Math.max(1, Math.round(state.stageReached * 2 + livingCount(state) * 0.3 + avgMeter(state) * 4));
 }
 
+// Switch the active world to `id` (an already-reached world in state.worlds).
+// Commits the current world's live fields first, then makes `id` live. Returns
+// true on success. The caller handles save/relayout/HUD (see main.js).
+export function switchWorld(state, id) {
+  if (!id || id === state.worldId || !state.worlds || !state.worlds[id]) return false;
+  state.worlds[state.worldId] = activeSnapshot(state); // commit current
+  applySnapshot(state, id, state.worlds[id]);
+  return true;
+}
+
 // Restore the current world and advance to the next. Returns
 // { gain, restoredId, nextId } or null if not eligible. `today` is a local
 // 'YYYY-MM-DD' string stamped as the restoration date. Water and upgrades are

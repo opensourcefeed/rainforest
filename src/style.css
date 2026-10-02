@@ -741,6 +741,7 @@ html, body {
 
 /* Real Grove button sits under the settings button */
 .hud-grove { top: 54px; }
+.hud-map { top: 96px; }
 
 /* Daily gift streak dots */
 .daily-dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 2px; }
@@ -762,6 +763,30 @@ html, body {
 .grove-info small { font-size: 12px; opacity: 0.7; }
 .grove-empty { text-align: center; padding: 24px 12px; font-size: 32px; }
 .grove-empty p { font-size: 14px; line-height: 1.5; opacity: 0.8; margin-top: 8px; }
+
+/* World Map — the switch hub (reuses .shop bottom-sheet) */
+.wm-intro { font-size: 13px; opacity: 0.82; line-height: 1.5; margin: -4px 0 12px; }
+.wm-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.wm-card {
+  display: flex; gap: 12px; align-items: center; padding: 11px 12px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid transparent; text-align: left;
+}
+.wm-card.switch { cursor: pointer; }
+.wm-card.switch:hover { background: rgba(255, 255, 255, 0.11); }
+.wm-card.active { border-color: rgba(159, 224, 138, 0.6); background: rgba(159, 224, 138, 0.12); }
+.wm-card.locked { opacity: 0.5; }
+.wm-ic { font-size: 28px; flex: 0 0 auto; width: 40px; text-align: center; }
+.wm-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.wm-info b { font-size: 15px; }
+.wm-info small { font-size: 12px; opacity: 0.7; margin-left: 4px; }
+.wm-status { font-size: 12.5px; opacity: 0.9; margin-top: 2px; }
+.wm-tag { font-size: 11px; font-weight: 700; color: #9fe08a; flex: 0 0 auto; }
+.wm-go { font-size: 12.5px; font-weight: 700; color: #cfe8ff; flex: 0 0 auto; }
+.wm-grove {
+  margin-top: 12px; width: 100%; padding: 12px; border: none; border-radius: 12px;
+  background: rgba(159, 224, 138, 0.16); color: #dff6d2; font-size: 14px; font-weight: 600;
+  cursor: pointer; touch-action: manipulation;
+}
 
 /* Shovel (remove) tool in the plant selector */
 .hud-types > button.t-shovel { background: rgba(90, 64, 36, 0.7); border-color: rgba(201, 160, 106, 0.4); }

@@ -14,6 +14,8 @@ import { initAudio, resumeAudio, setRain, sfx } from './sound.js';
 import { loadGame, saveGame, clearSave } from './save.js';
 import { createSettings } from './settings.js';
 import { createGrove } from './grove.js';
+import { createWorldMap } from './worldmap.js';
+import { switchWorld } from './game.js';
 import { showDaily } from './daily.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
@@ -70,6 +72,17 @@ const settings = createSettings({
   onReset() { resetting = true; clearSave(); location.reload(); },
 });
 const grove = createGrove();
+const worldmap = createWorldMap(state, {
+  onSwitch(id) {
+    if (switchWorld(state, id)) {
+      sfx.unlock();
+      man.queue.length = 0; man.lastIdx = null; man.moving = false;
+      scheduleLayout();
+      save();
+    }
+  },
+  onOpenGrove() { grove.open(); },
+});
 const hud = createHud({
   onCollectWater() { state.water += collectAmount(state); if (state.stats) state.stats.collected++; sfx.collect(); },
   onSelectType(id) { state.selectedType = id; },
@@ -77,6 +90,7 @@ const hud = createHud({
   onOpenQuests() { quests.open(); },
   onOpenSettings() { settings.open(); },
   onOpenGrove() { grove.open(); },
+  onOpenMap() { worldmap.open(); },
   // Selector height changes when a new tier unlocks; re-measure the reserve.
   onLayoutChange() { scheduleLayout(); },
 });
