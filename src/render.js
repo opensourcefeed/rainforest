@@ -412,10 +412,7 @@ export function renderScene(ctx, state, now = 0, man = null) {
         const bob = Math.sin(time * 3 + p.col + p.row) * 2.5 * unit;
         const iy = c.y - plantHeight(p.plant) - 8 * unit + bob;
         if (p.plant.thirsty) {
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.font = `${Math.round(16 * unit)}px system-ui, sans-serif`;
-          ctx.fillText('💧', c.x, iy);
+          drawCracked(ctx, c.x, iy, 6 * unit); // dry, cracked earth → needs water
         } else {
           drawDrop(ctx, c.x, iy, (4 + 0.4 * Math.sin(time * 4 + p.col)) * unit);
         }
@@ -666,6 +663,22 @@ function drawFx(ctx, state) {
   ctx.globalAlpha = 1;
 }
 
+// The "thirsty" indicator above a plant — a patch of dry, cracked earth, so it
+// reads as "needs water" and is clearly distinct from the harvest water droplet.
+function drawCracked(ctx, x, y, r) {
+  ctx.fillStyle = '#b47c47'; // parched earth
+  ctx.beginPath(); ctx.ellipse(x, y, r * 1.2, r * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255, 240, 210, 0.25)'; // sun-baked sheen
+  ctx.beginPath(); ctx.ellipse(x - r * 0.25, y - r * 0.28, r * 0.5, r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#6e4a28'; // cracks radiating from the centre
+  ctx.lineWidth = Math.max(1, r * 0.13); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (const [dx, dy] of [[-1, -0.25], [0.15, -0.9], [1, 0.1], [-0.55, 0.85], [0.6, 0.8]]) {
+    ctx.moveTo(x, y); ctx.lineTo(x + dx * r * 1.05, y + dy * r * 0.75);
+  }
+  ctx.stroke();
+}
+
 // The "ready to harvest" token above a grown plant — a water droplet, since what
 // you collect is water (not coins). A soft glow + highlight make it read as a
 // bright, collectible reward, distinct from the plain 💧 "thirsty" bubble.
@@ -847,6 +860,69 @@ const SHAPES = {
       ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.3, s * 0.055);
       ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
     }
+  },
+
+  // Rosette: thick pointed leaves radiating from the base — succulents that are
+  // NOT columnar cacti (Sahel aloe, Atlantic bromeliad).
+  rosette(ctx, cx, baseY, s, color, rim) {
+    const h = s * 0.92;
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1;
+    for (const f of [-1, -0.62, -0.28, 0, 0.28, 0.62, 1]) {
+      const ang = f * 1.15;                         // spread from vertical
+      const len = h * (1 - Math.abs(f) * 0.32);     // outer leaves shorter
+      const tipx = cx + Math.sin(ang) * len, tipy = baseY - Math.cos(ang) * len;
+      const mx = cx + Math.sin(ang) * len * 0.5, my = baseY - Math.cos(ang) * len * 0.5;
+      const wx = Math.cos(ang) * s * 0.13, wy = Math.sin(ang) * s * 0.13; // leaf half-width
+      ctx.beginPath();
+      ctx.moveTo(cx, baseY);
+      ctx.quadraticCurveTo(mx + wx, my + wy, tipx, tipy);
+      ctx.quadraticCurveTo(mx - wx, my - wy, cx, baseY);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    blob(ctx, cx, baseY - h * 0.06, s * 0.1, color, rim); // tight centre
+  },
+
+  // Grass: a tuft of thin straight blades (Sahel grass tuft; good generic grass).
+  grass(ctx, cx, baseY, s, color, rim) {
+    const h = s * 0.95;
+    ctx.lineCap = 'round';
+    for (const f of [-0.5, -0.25, 0, 0.25, 0.5]) {
+      const bx = cx + f * s * 0.12;
+      const ex = cx + f * s * 0.55, ey = baseY - h * (1 - Math.abs(f) * 0.28);
+      const mx = cx + f * s * 0.3;
+      ctx.strokeStyle = rim; ctx.lineWidth = Math.max(2.4, s * 0.1);
+      ctx.beginPath(); ctx.moveTo(bx, baseY); ctx.quadraticCurveTo(mx, baseY - h * 0.6, ex, ey); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.3, s * 0.05);
+      ctx.beginPath(); ctx.moveTo(bx, baseY); ctx.quadraticCurveTo(mx, baseY - h * 0.6, ex, ey); ctx.stroke();
+    }
+  },
+
+  // Grain: tall stalks each topped with a drooping seed head (Sahel millet).
+  grain(ctx, cx, baseY, s, color, rim) {
+    const h = s * 1.0;
+    ctx.lineCap = 'round';
+    for (const f of [-0.28, 0.06, 0.3]) {
+      const bx = cx + f * s * 0.3, topx = bx + f * s * 0.18, topy = baseY - h * (0.9 - Math.abs(f) * 0.08);
+      ctx.strokeStyle = darken(color, 0.82); ctx.lineWidth = Math.max(1.6, s * 0.06);
+      ctx.beginPath(); ctx.moveTo(bx, baseY); ctx.quadraticCurveTo(bx, (baseY + topy) / 2, topx, topy); ctx.stroke();
+      ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(topx, topy - s * 0.05, s * 0.09, s * 0.2, 0.22 * f, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+  },
+
+  // Poplar: short trunk under a tall, slender spire crown (Loess Lombardy poplar).
+  poplar(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.14, tw = Math.max(2, s * 0.07);
+    ctx.fillStyle = '#7a5230'; roundRect(ctx, cx - tw / 2, baseY - trunkH, tw, trunkH, 1); ctx.fill();
+    const topY = baseY - s, botY = baseY - trunkH * 0.5, span = botY - topY;
+    ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(cx, topY);
+    ctx.bezierCurveTo(cx + s * 0.22, topY + span * 0.35, cx + s * 0.2, botY - span * 0.1, cx, botY);
+    ctx.bezierCurveTo(cx - s * 0.2, botY - span * 0.1, cx - s * 0.22, topY + span * 0.35, cx, topY);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
   },
 };
 

@@ -213,6 +213,16 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
 
 **Phase A complete** — multiple switchable worlds with idle income are live.
 
+### Graphics appropriateness pass
+- [x] **V3 — appropriate plant silhouettes + harvest/thirsty icons.** Non-desert worlds were
+      reusing the cactus column for rosette succulents and the palm for a non-palm tree. Added
+      `rosette` (Aloe, Bromeliad), `grass` (Grass tuft), `grain` (Millet), `poplar` (Loess
+      poplar) silhouettes; reassigned Sea buckthorn/Willow→shrub, Brazilwood→canopy,
+      Jacaranda→tree. Harvest token is now a water droplet (not a gold coin); the thirsty
+      indicator is a cracked-earth patch (not 💧), so "needs water" vs "collect water" read
+      clearly apart. (Loess Sea buckthorn & Willow both use shrub — fine botanically, slightly
+      similar; could differentiate later.)
+
 ### World identity pass (make each world look distinct)
 - [x] **V1 — bold per-world palettes.** Reworked Sahel/Loess/Atlantic scene palettes so each
       reads as its own climate (golden savanna / red-ochre terraces / humid blue-green jungle),
