@@ -705,6 +705,90 @@ const SHAPES = {
     blob(ctx, cx + cr * 0.72, baseY - trunkH - cr * 0.55, cr * 0.92, color, rim);
     blob(ctx, cx, baseY - trunkH - cr * 1.25, cr * 1.1, color, rim); // tall layered crown
   },
+
+  // --- Per-world signature silhouettes (selected via world.js plant.shape) ---
+
+  // Palm: curved trunk crowned by a radiating fan of fronds (Thar date palm,
+  // Atlantic brazilwood).
+  palm(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.62;
+    ctx.strokeStyle = '#8a6038'; ctx.lineWidth = Math.max(2.5, s * 0.12); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx, baseY);
+    ctx.quadraticCurveTo(cx - s * 0.1, baseY - trunkH * 0.55, cx + s * 0.03, baseY - trunkH); ctx.stroke();
+    const tx = cx + s * 0.03, ty = baseY - trunkH, fl = s * 0.5;
+    for (const [dx, dy] of [[-1, -0.1], [-0.7, -0.7], [-0.25, -1], [0.25, -1], [0.7, -0.7], [1, -0.1]]) {
+      const mx = tx + dx * fl * 0.5, my = ty + dy * fl * 0.45 - s * 0.05;
+      const ex = tx + dx * fl, ey = ty + dy * fl * 0.1;
+      ctx.strokeStyle = rim; ctx.lineWidth = Math.max(3, s * 0.14);
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.5, s * 0.08);
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    }
+  },
+
+  // Acacia: thin trunk, splayed branches, a wide flat umbrella canopy (Sahel).
+  acacia(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.55, tw = Math.max(2.5, s * 0.1);
+    ctx.fillStyle = '#7a5230';
+    roundRect(ctx, cx - tw / 2, baseY - trunkH, tw, trunkH, tw * 0.3); ctx.fill();
+    ctx.strokeStyle = '#7a5230'; ctx.lineWidth = tw * 0.8; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx, baseY - trunkH * 0.72); ctx.lineTo(cx - s * 0.28, baseY - trunkH);
+    ctx.moveTo(cx, baseY - trunkH * 0.72); ctx.lineTo(cx + s * 0.28, baseY - trunkH); ctx.stroke();
+    const cw = s * 0.98, ch = s * 0.3, cyy = baseY - trunkH - ch * 0.4;
+    ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.ellipse(cx, cyy, cw / 2, ch / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    blob(ctx, cx - cw * 0.22, cyy - ch * 0.35, ch * 0.5, color, rim);
+    blob(ctx, cx + cw * 0.2, cyy - ch * 0.28, ch * 0.44, color, rim);
+  },
+
+  // Baobab: fat bottle trunk, short splayed branches, sparse foliage tufts (Sahel).
+  baobab(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.58, tw = Math.max(6, s * 0.42);
+    ctx.fillStyle = '#9a7850'; ctx.strokeStyle = darken('#9a7850', 0.78); ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(cx - tw / 2, baseY); ctx.lineTo(cx - tw * 0.26, baseY - trunkH);
+    ctx.lineTo(cx + tw * 0.26, baseY - trunkH); ctx.lineTo(cx + tw / 2, baseY);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    const ty = baseY - trunkH;
+    ctx.strokeStyle = '#9a7850'; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+    for (const dx of [-1, -0.4, 0.4, 1]) {
+      ctx.beginPath(); ctx.moveTo(cx, ty); ctx.lineTo(cx + dx * s * 0.3, ty - s * 0.18); ctx.stroke();
+    }
+    for (const dx of [-1, -0.4, 0.4, 1]) blob(ctx, cx + dx * s * 0.3, ty - s * 0.2, s * 0.14, color, rim);
+    blob(ctx, cx, ty - s * 0.12, s * 0.16, color, rim);
+  },
+
+  // Pine: short trunk under three stacked conifer tiers (Loess highland).
+  pine(ctx, cx, baseY, s, color, rim) {
+    const trunkH = s * 0.16, tw = Math.max(2, s * 0.09);
+    ctx.fillStyle = '#6a4a2c'; roundRect(ctx, cx - tw / 2, baseY - trunkH, tw, trunkH, 1); ctx.fill();
+    ctx.fillStyle = color; ctx.strokeStyle = rim; ctx.lineWidth = 1.1;
+    const topY = baseY - s, botY = baseY - trunkH, span = botY - topY;
+    const layers = [
+      { y0: botY, y1: botY - span * 0.46, w: s * 0.5 },
+      { y0: botY - span * 0.34, y1: botY - span * 0.76, w: s * 0.38 },
+      { y0: botY - span * 0.64, y1: topY, w: s * 0.26 },
+    ];
+    for (const ly of layers) {
+      ctx.beginPath(); ctx.moveTo(cx - ly.w, ly.y0); ctx.lineTo(cx + ly.w, ly.y0);
+      ctx.lineTo(cx, ly.y1); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+  },
+
+  // Fern: a low cluster of arching fronds springing from the ground (Atlantic).
+  fern(ctx, cx, baseY, s, color, rim) {
+    const h = s * 0.82;
+    ctx.lineCap = 'round';
+    for (const dx of [-1, -0.5, 0, 0.5, 1]) {
+      const ex = cx + dx * s * 0.42, ey = baseY - h * (1 - Math.abs(dx) * 0.32);
+      const mx = cx + dx * s * 0.1, my = baseY - h * 0.6;
+      ctx.strokeStyle = rim; ctx.lineWidth = Math.max(2.5, s * 0.1);
+      ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.3, s * 0.055);
+      ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    }
+  },
 };
 
 // Shift a #rrggbb colour lighter (f>0) or darker (f<0), for per-plant variety.
@@ -727,7 +811,8 @@ function drawPlant(ctx, cx, baseY, plant) {
   }
 
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
-  const skinColor = plantCosmetic(plant.typeId).color; // per-world reskin
+  const cos = plantCosmetic(plant.typeId); // per-world reskin (color + shape)
+  const skinColor = cos.color;
   const s = plantHeight(plant); // already size-varied by plant.v
   const v = plant.v ?? 0.5;
   const v2 = (v * 7.3) % 1;
@@ -743,6 +828,6 @@ function drawPlant(ctx, cx, baseY, plant) {
 
   // Thirsty plants wilt; otherwise each plant gets a slight brightness shift.
   const color = plant.thirsty ? wilt(skinColor) : tint(skinColor, (v2 - 0.5) * 0.3);
-  (SHAPES[type.id] || SHAPES.seed)(ctx, jx, jy, s, color, darken(color, 0.62));
+  (SHAPES[cos.shape] || SHAPES[type.id] || SHAPES.seed)(ctx, jx, jy, s, color, darken(color, 0.62));
   ctx.globalAlpha = 1;
 }

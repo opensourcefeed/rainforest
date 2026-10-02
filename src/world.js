@@ -41,7 +41,7 @@ export const WORLDS = [
       { name: 'Cactus', emoji: '🌵', color: '#3fa47e' },
       { name: 'Shrub', emoji: '🌿', color: '#6bb63f' },
       { name: 'Tree', emoji: '🌳', color: '#3f8f37' },
-      { name: 'Canopy', emoji: '🌴', color: '#2a6f2e' },
+      { name: 'Date palm', emoji: '🌴', color: '#2a6f2e', shape: 'palm' },
     ],
   },
   {
@@ -66,8 +66,8 @@ export const WORLDS = [
       { name: 'Grass tuft', emoji: '🌱', color: '#b7cf5a' },
       { name: 'Aloe', emoji: '🌵', color: '#52a86e' },
       { name: 'Millet', emoji: '🌾', color: '#86b63f' },
-      { name: 'Acacia', emoji: '🌳', color: '#4f8f3a' },
-      { name: 'Baobab', emoji: '🌴', color: '#2f6f2c' },
+      { name: 'Acacia', emoji: '🌳', color: '#4f8f3a', shape: 'acacia' },
+      { name: 'Baobab', emoji: '🌴', color: '#2f6f2c', shape: 'baobab' },
     ],
   },
   {
@@ -92,7 +92,7 @@ export const WORLDS = [
       { name: 'Sea buckthorn', emoji: '🌵', color: '#58a876' },
       { name: 'Willow', emoji: '🌿', color: '#6bb648' },
       { name: 'Poplar', emoji: '🌳', color: '#3f8f40' },
-      { name: 'Pine', emoji: '🌲', color: '#246b3a' },
+      { name: 'Pine', emoji: '🌲', color: '#246b3a', shape: 'pine' },
     ],
   },
   {
@@ -114,11 +114,11 @@ export const WORLDS = [
       { skyTop: [84, 160, 208],  skyBot: [148, 202, 186], grTop: [36, 108, 52],   grBot: [20, 78, 40] },
     ],
     plants: [
-      { name: 'Fern', emoji: '🌱', color: '#8fd25a' },
+      { name: 'Fern', emoji: '🌱', color: '#8fd25a', shape: 'fern' },
       { name: 'Bromeliad', emoji: '🌺', color: '#4fae6e' },
       { name: 'Cecropia', emoji: '🌿', color: '#5fb63f' },
       { name: 'Jacaranda', emoji: '🌳', color: '#3a8f3c' },
-      { name: 'Brazilwood', emoji: '🌴', color: '#246a2c' },
+      { name: 'Brazilwood', emoji: '🌴', color: '#246a2c', shape: 'palm' },
     ],
   },
 ];

@@ -32,6 +32,7 @@ export function plantCosmetic(typeId) {
     name: (skin && skin.name) || base.name,
     emoji: (skin && skin.emoji) || base.emoji,
     color: (skin && skin.color) || base.color,
+    shape: (skin && skin.shape) || typeId, // which render silhouette to draw
   };
 }
 

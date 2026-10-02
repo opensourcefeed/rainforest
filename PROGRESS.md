@@ -205,5 +205,14 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       +/s income + legacy reward + next land reveal (or "every land restored" finale), with a
       real-tree nudge. main.js pauses and shows it after completeWorld.
 
-**Phase A complete** — multiple switchable worlds with idle income are live. Next: real-device
-playtest; then Phase B (bigger drag-to-pan grids + economy rescale + balance-sim pass).
+**Phase A complete** — multiple switchable worlds with idle income are live.
+
+### World identity pass (make each world look distinct)
+- [x] **V1 — bold per-world palettes.** Reworked Sahel/Loess/Atlantic scene palettes so each
+      reads as its own climate (golden savanna / red-ochre terraces / humid blue-green jungle),
+      strongest in early stages, converging to a per-hue lush green. Visual-only.
+- [x] **V2 — signature plant silhouettes.** plantCosmetic() now carries a `shape`; added palm,
+      acacia, baobab, pine, fern silhouettes in render.js, assigned per world (Thar date palm,
+      Sahel acacia+baobab, Loess pine, Atlantic fern+palm). Falls back to the tier shape.
+
+Next: real-device playtest; then Phase B (bigger drag-to-pan grids + economy rescale + balance-sim).
