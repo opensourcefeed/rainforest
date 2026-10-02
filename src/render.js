@@ -417,7 +417,7 @@ export function renderScene(ctx, state, now = 0, man = null) {
           ctx.font = `${Math.round(16 * unit)}px system-ui, sans-serif`;
           ctx.fillText('💧', c.x, iy);
         } else {
-          drawCoin(ctx, c.x, iy, (3.8 + 0.4 * Math.sin(time * 4 + p.col)) * unit);
+          drawDrop(ctx, c.x, iy, (4 + 0.4 * Math.sin(time * 4 + p.col)) * unit);
         }
       }
       // Mixed grove (3+ species around it): a small gold marker on the tile.
@@ -666,18 +666,33 @@ function drawFx(ctx, state) {
   ctx.globalAlpha = 1;
 }
 
-// A small gold coin — the "ready to harvest" token above a grown plant.
-function drawCoin(ctx, x, y, r) {
-  const glow = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 2);
-  glow.addColorStop(0, 'rgba(246, 207, 79, 0.3)');
-  glow.addColorStop(1, 'rgba(246, 207, 79, 0)');
+// The "ready to harvest" token above a grown plant — a water droplet, since what
+// you collect is water (not coins). A soft glow + highlight make it read as a
+// bright, collectible reward, distinct from the plain 💧 "thirsty" bubble.
+function drawDrop(ctx, x, y, r) {
+  // Soft blue glow so it pops as a reward.
+  const glow = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 2.2);
+  glow.addColorStop(0, 'rgba(120, 200, 245, 0.38)');
+  glow.addColorStop(1, 'rgba(120, 200, 245, 0)');
   ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(x, y, r * 2, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#f6cf4f'; ctx.fill();
-  ctx.lineWidth = 1.4; ctx.strokeStyle = '#c1961d'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.32, r * 0.32, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, Math.PI * 2); ctx.fill();
+
+  // Teardrop: pointed top, round bottom.
+  const top = y - r * 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, top);
+  ctx.bezierCurveTo(x + r * 1.1, y - r * 0.15, x + r * 0.95, y + r * 0.85, x, y + r);
+  ctx.bezierCurveTo(x - r * 0.95, y + r * 0.85, x - r * 1.1, y - r * 0.15, x, top);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(x, top, x, y + r);
+  g.addColorStop(0, '#a8ddf6');
+  g.addColorStop(1, '#3f93d6');
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(32, 96, 150, 0.7)'; ctx.stroke();
+
+  // Glossy highlight.
+  ctx.beginPath(); ctx.ellipse(x - r * 0.32, y + r * 0.08, r * 0.2, r * 0.32, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.78)'; ctx.fill();
 }
 
 // Darken a #rrggbb color by factor f -> css string (for rims/trunks).
