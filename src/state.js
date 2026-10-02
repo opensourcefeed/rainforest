@@ -50,7 +50,8 @@ export function tileCenter(col, row) {
 export function plantHeight(plant) {
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
   const growth = plant.status === 'settling' ? 0.25 : 0.4 + 0.6 * (plant.growth || 0);
-  return Math.min(L.th * 1.7 * growth * type.size, L.th * 2.4);
+  const v = 0.86 + 0.28 * (plant.v ?? 0.5); // per-plant size variation
+  return Math.min(L.th * 1.7 * growth * type.size * v, L.th * 2.4 * v);
 }
 
 // A ripe fruit or thirst bubble floats above its plant; tapping the icon itself

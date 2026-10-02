@@ -66,6 +66,7 @@ export function loadGame() {
       if (state.plots.some((p) => p.unlocked === undefined)) {
         state.plots.forEach((p) => { p.unlocked = true; });
       }
+      state.plots.forEach((p) => { if (p.plant && p.plant.v === undefined) p.plant.v = Math.random(); });
     }
     // Don't re-grant milestone bonuses for stages already reached. Trust the
     // saved value if present; otherwise seed from the restored environment.

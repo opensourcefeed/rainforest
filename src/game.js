@@ -372,7 +372,7 @@ export function plantSeed(state, index) {
 
   state.water -= cost;
   plot.planted = true;
-  plot.plant = { status: 'settling', age: 0, growth: 0, typeId: type.id };
+  plot.plant = { status: 'settling', age: 0, growth: 0, typeId: type.id, v: Math.random() };
   if (state.stats) state.stats.planted++;
   // Show the odds the player is up against, so failure reads as informative.
   const sheltered = tileBonus(state, plot).nurse > 0;
@@ -479,7 +479,7 @@ export function upgradePlant(state, index) {
     return false;
   }
   state.water -= cost;
-  plot.plant = { status: 'alive', age: 0, growth: 0.15, typeId: type.id };
+  plot.plant = { status: 'alive', age: 0, growth: 0.15, typeId: type.id, v: Math.random() };
   if (state.stats) { state.stats.planted++; state.stats.replaced = (state.stats.replaced || 0) + 1; }
   pushFx(state, plot.col, plot.row, 'survive');
   return true;

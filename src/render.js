@@ -657,7 +657,7 @@ function wilt(hex) {
 function blob(ctx, x, y, r, fill, rim) {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fillStyle = fill; ctx.fill();
-  ctx.lineWidth = 1.4; ctx.strokeStyle = rim; ctx.stroke();
+  ctx.lineWidth = 1.7; ctx.strokeStyle = rim; ctx.stroke();
 }
 function roundFillStroke(ctx, x, y, w, h, rad) {
   roundRect(ctx, x, y, w, h, rad); ctx.fill(); ctx.stroke();
@@ -713,7 +713,15 @@ const SHAPES = {
   },
 };
 
+// Shift a #rrggbb colour lighter (f>0) or darker (f<0), for per-plant variety.
+function tint(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const adj = (c) => ((f >= 0 ? c + (255 - c) * f : c * (1 + f)) | 0);
+  return `rgb(${adj((n >> 16) & 255)},${adj((n >> 8) & 255)},${adj(n & 255)})`;
+}
 // Draw a plant standing on its iso tile, with a ground shadow to anchor it.
+// Each plant is jittered in size/tint/position (from plant.v) so a cluster
+// reads as distinct plants, not one green blob.
 function drawPlant(ctx, cx, baseY, plant) {
   if (plant.status === 'dead') {
     ctx.strokeStyle = '#7a5a34'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
@@ -725,17 +733,21 @@ function drawPlant(ctx, cx, baseY, plant) {
   }
 
   const type = TYPE_BY_ID[plant.typeId] || PLANT_TYPES[0];
-  const s = plantHeight(plant);
+  const s = plantHeight(plant); // already size-varied by plant.v
+  const v = plant.v ?? 0.5;
+  const v2 = (v * 7.3) % 1;
+  const jx = cx + (v - 0.5) * L.tw * 0.24;   // nudge off dead-centre
+  const jy = baseY + (v2 - 0.5) * L.th * 0.18;
   ctx.globalAlpha = plant.status === 'settling' ? 0.6 : 1;
 
   // Ground shadow — separates the plant from the tile and its neighbours.
-  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
   ctx.beginPath();
-  ctx.ellipse(cx, baseY + 1, Math.max(6, s * 0.32), Math.max(2, s * 0.13), 0, 0, Math.PI * 2);
+  ctx.ellipse(jx, jy + 1, Math.max(6, s * 0.3), Math.max(2, s * 0.12), 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Thirsty plants wilt toward a dry straw colour until watered.
-  const color = plant.thirsty ? wilt(type.color) : type.color;
-  (SHAPES[type.id] || SHAPES.seed)(ctx, cx, baseY, s, color, darken(color, 0.55));
+  // Thirsty plants wilt; otherwise each plant gets a slight brightness shift.
+  const color = plant.thirsty ? wilt(type.color) : tint(type.color, (v2 - 0.5) * 0.3);
+  (SHAPES[type.id] || SHAPES.seed)(ctx, jx, jy, s, color, darken(color, 0.48));
   ctx.globalAlpha = 1;
 }
