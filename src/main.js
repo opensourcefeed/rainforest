@@ -88,12 +88,13 @@ function showCompletion() {
   paused = true;
   celebrate.showComplete(
     {
+      worldId: state.worldId,
       restoredPlace: here.place, income, gain, bonusNow, bonusAfter,
       nextPlace: next ? next.place : null,
       nextRegion: next ? next.region : null,
       nextBlurb: next ? next.blurb : null,
     },
-    { onConfirm: doCompleteWorld, onStay() { paused = false; } },
+    { onConfirm: doCompleteWorld, onStay() { paused = false; }, onGrove() { grove.open(); } },
   );
 }
 const shop = createShop(state, () => sfx.upgrade(), () => showCompletion());

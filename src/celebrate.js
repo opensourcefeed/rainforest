@@ -30,6 +30,17 @@ const REAL_LINES = {
   Rainforest: 'You brought this forest back. Now go plant a real tree — even one matters.',
 };
 
+// Per-world "why it matters" lines for the world-complete modal — a different
+// real-world reason each world so it never repeats across the four. Kept general
+// and verifiable (no invented statistics), per the real-tree framing in CLAUDE.md.
+const REAL_WORLD_LINES = {
+  thar: 'Real trees push back deserts — their roots bind the soil and their shade cools the ground, exactly as here.',
+  sahel: 'In dryland regions, trees bring back water and shelter — a real grove can change a whole community.',
+  loess: 'Tree roots hold hillsides together; a planted slope keeps healing for generations.',
+  atlantic: 'Forests shelter most life on land — each real tree you plant restores a little of that.',
+};
+const REAL_WORLD_FALLBACK = 'You restored a whole land here. A real tree you plant will outlive this entire game.';
+
 function confetti() {
   let html = '';
   for (let i = 0; i < 16; i++) {
@@ -92,11 +103,13 @@ export function createCelebration({ onContinue }) {
     // player can keep growing this land (more legacy / income when they do commit).
     //
     // `info` is built by main.js (projected, since nothing has happened yet):
-    //   { restoredPlace, income, gain, bonusNow, bonusAfter,
+    //   { worldId, restoredPlace, income, gain, bonusNow, bonusAfter,
     //     nextPlace, nextRegion, nextBlurb }   (next* null on the final world).
-    // `handlers` = { onConfirm, onStay }.
-    showComplete(info, { onConfirm, onStay }) {
+    // `handlers` = { onConfirm, onStay, onGrove }. onGrove opens the Real Grove
+    // on top of (not dismissing) this modal, so the carry-on choice remains.
+    showComplete(info, { onConfirm, onStay, onGrove }) {
       const hasNext = !!info.nextPlace;
+      const realLine = REAL_WORLD_LINES[info.worldId] || REAL_WORLD_FALLBACK;
       const nextHtml = hasNext
         ? `<div class="celebrate-unlock">🌏 Next land: <b>${info.nextPlace}</b>, ${info.nextRegion}
              <br><small>${info.nextBlurb}</small></div>`
@@ -111,11 +124,10 @@ export function createCelebration({ onContinue }) {
           <p class="celebrate-tip">🌱 Restore it and it keeps growing water on its own · +${info.income.toFixed(1)}/s 💧</p>
           ${nextHtml}
           <div class="celebrate-reward">+${info.gain} 🌿 legacy · growth &amp; yield +${info.bonusNow}% → +${info.bonusAfter}%</div>
-          <div class="celebrate-real"><span>🌱 In the real world</span>${
-            hasNext
-              ? 'One land healed here. Go plant one real tree — it outlives this whole game.'
-              : 'You finished the game. The real forest is still waiting — plant a tree today.'
-          }</div>
+          <div class="celebrate-real">
+            <span>🌱 In the real world</span>${realLine}
+            <button type="button" class="celebrate-grove">See the Real Grove 🌍</button>
+          </div>
           <div class="celebrate-btns">
             <button type="button" class="celebrate-stay">Stay a while</button>
             <button type="button" class="celebrate-btn celebrate-go">${hasNext ? `Carry on to ${info.nextPlace}` : 'Restore the final forest'}</button>
@@ -133,6 +145,11 @@ export function createCelebration({ onContinue }) {
         dismiss();
         onStay();
       }, { once: true });
+      // Opens the grove over this modal (grove sheet z-index is above it); the
+      // completion modal stays so the player still chooses carry-on / stay after.
+      overlay.querySelector('.celebrate-grove').addEventListener('click', () => {
+        if (onGrove) onGrove();
+      });
     },
   };
 }
