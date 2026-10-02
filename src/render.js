@@ -192,65 +192,71 @@ function drawJug(ctx, x, y, u) {
 }
 
 function drawWater(ctx, w, horizonY, h, avg, time) {
-  const gb = h - horizonY;
-  const y = horizonY + gb * 0.15; // distant water line, behind the platform
   const u = L.unit;
+  const gb = h - horizonY;
+  const hash = (i) => { const q = Math.sin(i * 127.1) * 43758.5; return q - Math.floor(q); };
 
-  if (avg < 0.12) { drawJug(ctx, w * 0.18, y + gb * 0.02, u); return; }
+  // Barren desert: a carried jug on the ground.
+  if (avg < 0.12) { drawJug(ctx, w * 0.18, horizonY + gb * 0.5, u); return; }
 
-  const t = Math.min(1, (avg - 0.12) / 0.73);   // puddle (0) → river (1)
-  const width = (0.13 + 0.97 * t) * w;
-  const hgt = (0.035 + 0.11 * t) * gb;
-  const cx = (0.24 + 0.26 * t) * w;              // off to the side → centred
-  const left = cx - width / 2;
-  const hash = (i) => { const s = Math.sin(i * 127.1) * 43758.5; return s - Math.floor(s); };
+  // A distant water line at the horizon, BEHIND the grove: the platform (drawn
+  // on top) occludes its near edge, so it reads as "river behind the forest"
+  // with no floating. Thin (perspective), and its width runs past the screen
+  // edges as it grows so the ends slide off and a flowing river band remains —
+  // never a widening oval lake.
+  const t = Math.min(1, (avg - 0.12) / 0.73);   // pond (0) → river (1)
+  const hgt = (5 + 10 * t) * u;                  // thin distant band
+  const cy = horizonY + hgt;                     // top edge sits at the horizon
+  const width = (0.26 + 1.55 * t) * w;           // > w as it becomes a river (ends off-screen)
+  const cx = (0.34 + 0.16 * t) * w;              // off to one side → centred
+  const rad = width / 2;
 
-  // Damp, grassy bank — a slightly larger, darker ellipse so the water sits in
-  // the ground instead of floating as a blue blob.
+  // Damp grassy bank.
   ctx.fillStyle = 'rgba(52, 76, 38, 0.55)';
   ctx.beginPath();
-  ctx.ellipse(cx, y, width / 2 + 6 * u, hgt + 5 * u, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, rad + 6 * u, hgt + 5 * u, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Water body.
-  const grad = ctx.createLinearGradient(0, y - hgt, 0, y + hgt);
+  const grad = ctx.createLinearGradient(0, cy - hgt, 0, cy + hgt);
   grad.addColorStop(0, '#7cc2ee');
   grad.addColorStop(1, '#2f72b2');
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.ellipse(cx, y, width / 2, hgt, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, rad, hgt, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.lineWidth = 1.5 * u;
-  ctx.strokeStyle = 'rgba(210, 240, 255, 0.55)';
+  ctx.lineWidth = 1.4 * u;
+  ctx.strokeStyle = 'rgba(210, 240, 255, 0.5)';
   ctx.stroke();
 
-  // Shimmer / current — clipped to the water, more and faster as it grows.
+  // Current / shimmer, clipped to the water; faster as it flows.
   ctx.save();
   ctx.beginPath();
-  ctx.ellipse(cx, y, width / 2, hgt, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, rad, hgt, 0, 0, Math.PI * 2);
   ctx.clip();
-  ctx.fillStyle = 'rgba(212, 240, 255, 0.5)';
-  const n = 3 + ((t * 5) | 0);
+  ctx.fillStyle = 'rgba(214, 241, 255, 0.5)';
+  const n = 4 + ((t * 8) | 0);
   for (let i = 0; i < n; i++) {
-    const sx = left + ((i * 113 + time * (18 + 42 * t)) % width);
-    const sy = y + Math.sin(i * 1.7 + time * 1.4) * hgt * 0.5;
+    const sx = (cx - rad) + ((i * 131 + time * (20 + 55 * t)) % width);
+    const sy = cy + Math.sin(i * 1.7 + time * 1.3) * hgt * 0.5;
     ctx.beginPath();
-    ctx.ellipse(sx, sy, width * 0.05, hgt * 0.16, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, width * 0.04, hgt * 0.16, 0, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 
-  // Reeds along the near (front) bank, gently swaying.
+  // Reeds along the near edge, across the visible span, gently swaying.
   ctx.strokeStyle = '#3d7a2c';
   ctx.lineCap = 'round';
-  const reeds = 8 + ((t * 16) | 0);
+  ctx.lineWidth = 1.3 * u;
+  const reeds = 10 + ((t * 20) | 0);
   for (let i = 0; i < reeds; i++) {
-    const dxn = (hash(i) * 1.9 - 0.95); // -0.95..0.95 across the front
-    const rx = cx + dxn * (width / 2);
-    const edgeY = y + hgt * Math.sqrt(Math.max(0, 1 - dxn * dxn));
-    const rh = (4 + hash(i + 99) * 6) * u;
+    const rx = (i + 0.5) / reeds * w;
+    const dxn = (rx - cx) / rad;
+    if (Math.abs(dxn) >= 0.999) continue;
+    const edgeY = cy + hgt * Math.sqrt(1 - dxn * dxn);
+    const rh = (4 + hash(i) * 6) * u;
     const sway = Math.sin(time * 1.5 + i) * 1.6 * u;
-    ctx.lineWidth = 1.3 * u;
     ctx.beginPath();
     ctx.moveTo(rx, edgeY + 1);
     ctx.quadraticCurveTo(rx + sway * 0.5, edgeY - rh * 0.6, rx + sway, edgeY - rh);
@@ -472,7 +478,7 @@ const CLOUDS = (() => {
   const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const out = [];
   for (let i = 0; i < 8; i++) {
-    out.push({ phase: rnd(), fy: 0.14 + rnd() * 0.3, s: 30 + rnd() * 26, sp: 4 + rnd() * 7 });
+    out.push({ phase: rnd(), fy: 0.56 + rnd() * 0.3, s: 26 + rnd() * 20, sp: 4 + rnd() * 7 });
   }
   return out;
 })();
