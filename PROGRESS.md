@@ -241,6 +241,21 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       actions in one bottom flex column (`.hud-bottom`) so they stack without overlap at any
       size; the hint is now part of the measured control reserve.
 
+## Phase G — real-tree motivation + Real Grove
+Strengthen the "funds real trees" layer: motivate real planting at each world's end and
+make the Real Grove attractive.
+- [x] **G1 — real-tree motivation on world completion.** The world-complete modal now shows a
+      rotating per-world "why it matters" line (celebrate.REAL_WORLD_LINES, keyed by world id,
+      general/verifiable wording) and a "See the Real Grove 🌍" button that opens the grove over
+      the modal (keeps the carry-on/stay choice). No pledge/reward (per product call).
+- [x] **G2 — Real Grove impact header.** grove.js renders a hero header (tree count, species
+      count, updated date, a growing-grove 🌳 visual) above the card list; grove-hero styling.
+      Reads derived values from grove.json (no schema change). Note: grove.json still holds 2
+      placeholder entries — fill with the real trees/photos (via deploy.sh) to show real counts.
+
+Deferred (deselected for now): revenue-share promise line + verify/log link, richer cards
+(age/status/map), "plant your own" section. Seams left so they drop in later.
+
 ## Phase C — natural world-completion flow
 World completion was buried (a card inside the Upgrades shop) and showed a redundant
 confirm-then-celebrate double popup. Making it feel like an idle-game prestige climax.

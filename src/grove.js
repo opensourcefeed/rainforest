@@ -35,8 +35,22 @@ export function createGrove() {
       list.innerHTML = `<div class="grove-empty">🌱<p>The real grove is being documented.<br>Check back soon to see each tree.</p></div>`;
       return;
     }
-    const updated = data.updated ? ` · updated ${esc(data.updated)}` : '';
-    list.innerHTML = `<div class="grove-count">${trees.length} real tree${trees.length > 1 ? 's' : ''} planted${updated}</div>`
+    // Impact header — the grove's at-a-glance story: how many real trees, how
+    // many species, when last updated, with a small growing-grove visual.
+    const count = trees.length;
+    const species = new Set(trees.map((t) => (t.species || '').trim()).filter(Boolean)).size;
+    const updated = data.updated ? `updated ${esc(data.updated)}` : '';
+    const glyphs = Array.from({ length: Math.min(count, 14) }, () => '🌳').join('');
+    const more = count > 14 ? `<span class="grove-hero-more">+${count - 14}</span>` : '';
+    const metaBits = [species ? `${species} species` : '', updated].filter(Boolean).join(' · ');
+    const hero = `
+      <div class="grove-hero">
+        <div class="grove-hero-visual">${glyphs}${more}</div>
+        <div class="grove-hero-num">${count}</div>
+        <div class="grove-hero-label">real tree${count > 1 ? 's' : ''} planted in real ground</div>
+        ${metaBits ? `<div class="grove-hero-meta">${metaBits}</div>` : ''}
+      </div>`;
+    list.innerHTML = hero
       + trees.map((t) => `
         <div class="grove-card">
           ${t.photo ? `<img src="${esc(t.photo)}" alt="${esc(t.species)}" loading="lazy">` : '<div class="grove-ph">🌳</div>'}
