@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, SHOVEL } from './game.js';
 
 export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings, onOpenGrove }) {
   const root = document.getElementById('hud');
@@ -62,7 +62,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   // Persistent one-line reminder of the core action.
   const hint = document.createElement('div');
   hint.className = 'hud-hint';
-  hint.textContent = 'Tap soil to plant · desert to expand · a plant to upgrade it';
+  hint.textContent = 'Tap soil to plant · locked desert to expand · 🪏 then a plant to remove it';
 
   const actions = document.createElement('div');
   actions.className = 'hud-actions';
@@ -113,7 +113,8 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
     types.innerHTML = avail.map((t) => `
       <button type="button" data-type="${t.id}">
         <span class="t-name">${t.name}</span><span class="t-cost">${t.cost}💧</span>
-      </button>`).join('');
+      </button>`).join('')
+      + `<button type="button" data-type="${SHOVEL}" class="t-shovel"><span class="t-name">🪏 Remove</span></button>`;
     lastTypeCount = avail.length;
     if (onLayoutChange) onLayoutChange(); // control height changed; re-measure
   }
@@ -155,6 +156,10 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
       const avail = availableTypes(state);
       if (avail.length !== lastTypeCount) rebuildTypes(avail);
       for (const btn of types.children) {
+        if (btn.dataset.type === SHOVEL) {
+          btn.classList.toggle('sel', state.selectedType === SHOVEL);
+          continue;
+        }
         const t = avail.find((x) => x.id === btn.dataset.type);
         if (!t) continue;
         const c = plantCost(state, t); // reflects the Seed Bank upgrade

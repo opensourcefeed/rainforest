@@ -150,6 +150,7 @@ function moveMan(dt) {
       if (done === 'unlock') sfx.unlock();
       else if (done === 'harvest') sfx.harvest();
       else if (done === 'water') sfx.water();
+      else if (done === 'uproot') sfx.uproot();
       else if (done) sfx.plant();
       man.lastIdx = idx;
       man.queue.shift();

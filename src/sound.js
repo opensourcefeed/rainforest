@@ -122,6 +122,8 @@ export const sfx = {
   harvest() { blip(880, 0.08, 'triangle', 0.26); setTimeout(() => blip(1320, 0.14, 'sine', 0.2), 45); },
   // Watering a thirsty plant — a soft splash.
   water() { splash(); setTimeout(() => blip(620, 0.14, 'sine', 0.16), 80); },
+  // Digging out a plant with the shovel.
+  uproot() { thump(0.5); setTimeout(() => slide(300, 150, 0.3, 'triangle', 0.16), 55); },
   // Advancing from the stage popup.
   advance() { blip(540, 0.1, 'triangle', 0.26); setTimeout(() => blip(810, 0.22, 'triangle', 0.26), 90); },
 };

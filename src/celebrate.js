@@ -16,7 +16,7 @@ const TIPS = {
   Scrubland: 'Seedlings next to established plants survive more often — look for the green dots.',
   Grassland: 'Mix species: a plant with 3+ kinds around it earns extra water (gold dot).',
   'Dry woodland': 'Trees shade their neighbours, so plants beside them grow faster.',
-  Rainforest: 'Select a better plant and tap an old one to upgrade it in place.',
+  Rainforest: 'To change a plant, pick 🪏 Remove to dig it out, then plant a better one.',
 };
 
 const CONFETTI_COLORS = ['#f9c74f', '#90be6d', '#43aa8b', '#4d96ff', '#f94144', '#f3722c'];

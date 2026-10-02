@@ -116,7 +116,6 @@ export const QUEST_POOL = [
   { key: 'upgrade', metric: (s) => s.stats.upgraded, goals: [1, 3, 6], reward: (g) => g * 25, text: (g) => `Buy ${g} upgrade${g > 1 ? 's' : ''}` },
   { key: 'mature', abs: true, metric: (s) => matureCount(s), goals: [5, 10, 18], reward: (g) => g * 6, text: (g) => `Grow ${g} plants to full size` },
   { key: 'bigtrees', abs: true, metric: (s) => countTier(s, 3), goals: [1, 3, 6], reward: (g) => g * 30, text: (g) => `Have ${g} tree${g > 1 ? 's' : ''} or canopies growing` },
-  { key: 'replace', metric: (s) => s.stats.replaced || 0, goals: [2, 5, 10], reward: (g) => g * 12, text: (g) => `Upgrade ${g} plants to a better kind` },
   { key: 'harvest', metric: (s) => s.stats.harvested || 0, goals: [3, 8, 15], reward: (g) => g * 8, text: (g) => `Harvest ${g} fruits`, eligible: (s) => s.stageReached >= 1 },
   { key: 'water', metric: (s) => s.stats.watered || 0, goals: [2, 5, 10], reward: (g) => g * 6, text: (g) => `Water ${g} thirsty plants`, eligible: (s) => matureCount(s) >= 3 },
 ];
@@ -162,6 +161,8 @@ export function pruneQuests(state) {
 }
 export function initQuests(state) {
   if (!state.quests) state.quests = [];
+  // Drop any saved quest whose template no longer exists (e.g. old 'replace').
+  state.quests = state.quests.filter((q) => QUEST_POOL.some((t) => t.key === q.key));
   const used = new Set(state.quests.map((q) => q.key));
   const pool = QUEST_POOL.filter((t) => !used.has(t.key) && (!t.eligible || t.eligible(state)));
   while (state.quests.length < 3 && pool.length) {
@@ -468,39 +469,34 @@ export function waterPlant(state, index) {
 // --- Tile actions: what a tap on a tile would do --------------------------
 const tierOf = (id) => PLANT_TYPES.findIndex((t) => t.id === id);
 
-// 'unlock' | 'plant' | 'upgrade' | null (null = nothing to do, don't walk there).
+export const SHOVEL = 'shovel'; // pseudo-selection: the uproot tool
+
+// 'unlock' | 'plant' | 'uproot' | 'water' | 'harvest' | null.
 export function tileAction(state, index) {
   const plot = state.plots[index];
   if (!plot) return null;
   if (!plot.unlocked) return 'unlock';
-  if (!plot.planted) return 'plant';
+  const shovel = state.selectedType === SHOVEL;
+  if (!plot.planted) return shovel ? null : 'plant';
   const p = plot.plant;
   if (p && p.status === 'alive') {
-    if (p.thirsty) return 'water';
-    if (p.ripe) return 'harvest';
-    if (tierOf(selectedType(state).id) > tierOf(p.typeId)) return 'upgrade';
+    if (p.thirsty) return 'water';   // care always comes first…
+    if (p.ripe) return 'harvest';    // …so the shovel never eats a ripe/thirsty plant
+    if (shovel) return 'uproot';
   }
   return null;
 }
 
-// Replace an established plant with the selected, higher tier. Transplanted into
-// already-healthy ground, so it doesn't re-roll survival — you never lose the
-// old plant for nothing.
-export function upgradePlant(state, index) {
+// Dig out an established plant (free, instant). The tile becomes empty so a new
+// plant can go there. No refund — the plant already greened the land while alive.
+export function uprootPlant(state, index) {
   const plot = state.plots[index];
   const p = plot && plot.plant;
   if (!p || p.status !== 'alive') return false;
-  const type = selectedType(state);
-  if (tierOf(type.id) <= tierOf(p.typeId)) return false;
-  const cost = plantCost(state, type);
-  if (state.water < cost) {
-    pushFx(state, plot.col, plot.row, 'need', `${cost}💧`);
-    return false;
-  }
-  state.water -= cost;
-  plot.plant = { status: 'alive', age: 0, growth: 0.15, typeId: type.id, v: Math.random() };
-  if (state.stats) { state.stats.planted++; state.stats.replaced = (state.stats.replaced || 0) + 1; }
-  pushFx(state, plot.col, plot.row, 'survive');
+  plot.planted = false;
+  plot.plant = null;
+  if (state.stats) state.stats.uprooted = (state.stats.uprooted || 0) + 1;
+  pushFx(state, plot.col, plot.row, 'need', '🪏');
   return true;
 }
 
@@ -509,7 +505,7 @@ export function actOnTile(state, index) {
   const a = tileAction(state, index);
   if (a === 'unlock') return unlockPlot(state, index) ? a : null;
   if (a === 'plant') return plantSeed(state, index) ? a : null;
-  if (a === 'upgrade') return upgradePlant(state, index) ? a : null;
+  if (a === 'uproot') return uprootPlant(state, index) ? a : null;
   if (a === 'water') return waterPlant(state, index) ? a : null;
   if (a === 'harvest') return harvestAll(state) ? a : null;
   return null;
