@@ -111,6 +111,30 @@ html, body {
 }
 @media (prefers-reduced-motion: reduce) { .hud-carry { animation: none; } }
 
+/* Finale badge — persistent "all lands restored" accomplishment, in the same
+   top-centre slot the carry-on CTA vacates. Calm (no pulse); taps open the map. */
+.hud-finale {
+  position: absolute;
+  top: calc(var(--safe-t) + 150px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(84vw, 300px);
+  padding: 8px 16px;
+  border: 1.5px solid rgba(246, 211, 101, 0.85);
+  border-radius: 999px;
+  background: linear-gradient(165deg, rgba(246, 211, 101, 0.22), rgba(31, 51, 32, 0.4));
+  color: #fff6df;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.hud-finale[hidden] { display: none; }
+.hud-finale:active { transform: translateX(-50%) translateY(1px); filter: brightness(0.96); }
+
 .hud-stage.flash { animation: stageFlash 1.4s ease-out; transform-origin: left center; }
 @keyframes stageFlash {
   0% { transform: scale(1.25); background: rgba(79, 175, 71, 0.85); }
@@ -819,6 +843,13 @@ html, body {
 
 /* World Map — the switch hub (reuses .shop bottom-sheet) */
 .wm-intro { font-size: 13px; opacity: 0.82; line-height: 1.5; margin: -4px 0 12px; }
+.wm-finale {
+  text-align: center; padding: 14px 14px; margin-bottom: 10px; border-radius: 14px;
+  background: linear-gradient(165deg, rgba(246, 211, 101, 0.2), rgba(79, 175, 71, 0.14));
+  border: 1px solid rgba(246, 211, 101, 0.45);
+  font-size: 15px; line-height: 1.5; color: #fff6df;
+}
+.wm-finale small { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: #dff0d8; opacity: 0.9; }
 .wm-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .wm-card {
   display: flex; gap: 12px; align-items: center; padding: 11px 12px; border-radius: 12px;

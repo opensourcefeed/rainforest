@@ -2,7 +2,7 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, plantCosmetic, canPrestige, SHOVEL } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, plantCosmetic, canPrestige, allWorldsRestored, SHOVEL } from './game.js';
 
 export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings, onOpenGrove, onOpenMap, onCarryOn }) {
   const root = document.getElementById('hud');
@@ -68,6 +68,16 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   carry.innerHTML = '🌍 This land is whole — carry on →';
   if (onCarryOn) carry.addEventListener('click', onCarryOn);
 
+  // Finale badge: once EVERY land is restored there's no more to prestige, so the
+  // carry-on CTA retires and this persistent accomplishment badge takes its slot
+  // (mutually exclusive with carry). Tapping it opens the World Map finale.
+  const finale = document.createElement('button');
+  finale.className = 'hud-finale';
+  finale.type = 'button';
+  finale.hidden = true;
+  finale.innerHTML = '🌍 All lands restored';
+  if (onOpenMap) finale.addEventListener('click', onOpenMap);
+
   // Plant-type selector — the chosen type is what a soil tap plants. New tiers
   // appear here as stages unlock. Click delegation set once.
   const types = document.createElement('div');
@@ -114,7 +124,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   bottom.className = 'hud-bottom';
   bottom.append(types, hint, actions);
 
-  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, mapBtn, carry, bottom);
+  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, mapBtn, carry, finale, bottom);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');
@@ -167,6 +177,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
 
       rain.hidden = !(state.rain && state.rain.intensity > 0.15);
       carry.hidden = !canPrestige(state); // world complete, awaiting restoration
+      finale.hidden = !allWorldsRestored(state); // every land restored — the finale
       goalsDot.hidden = !anyClaimable(state);
       // Once rain arrives, harvests + rain carry the economy; retire the jug.
       collect.hidden = !!(state.rain && state.rain.unlocked);

@@ -151,6 +151,12 @@ rain, animals, real art) after migrating to Vite for the Capacitor wrap.
 - [x] **S45 — Prestige ("Plant a New Forest").** After Rainforest, reset for permanent legacy
       (+3%/pt growth & yield). Keeps legacy/forests/lifetime stats; ties to the real-tree theme.
 
+### Endgame
+- [x] **P4 — "All lands restored" finale state.** game.allWorldsRestored(state). Once every world
+      is restored, a persistent HUD badge "🌍 All lands restored" takes the (now-retired) carry-on
+      slot and taps open the World Map, which shows a finale note (forests · legacy · real-tree
+      line). Makes the accomplishment stay visible instead of only a one-time toast.
+
 Phase 1 core loop is now full: plant → heal → expand → upgrade → rain → complete → prestige,
 with quests for direction and sound for feel. Remaining Phase 1: real art, then Vite/Capacitor.
 

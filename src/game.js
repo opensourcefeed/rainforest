@@ -1,7 +1,7 @@
 // Gameplay rules and actions. state.js holds data + geometry; this holds the
 // verbs and the per-frame world update.
 import { STARTER_PLOTS } from './config.js';
-import { activeDims, activeWorld, nextWorldId } from './world.js';
+import { activeDims, activeWorld, nextWorldId, WORLDS } from './world.js';
 import { activeSnapshot, applySnapshot } from './state.js';
 
 export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
@@ -57,6 +57,13 @@ export function legacyBonus(state) {
 }
 export function canPrestige(state) {
   return state.stageReached >= 4 && !state.restoredDate; // Rainforest, not yet restored
+}
+// True once EVERY world has been restored — the game's finale state. The active
+// world's date lives on state.restoredDate; the rest in their snapshots.
+export function allWorldsRestored(state) {
+  return WORLDS.every((w) => !!(w.id === state.worldId
+    ? state.restoredDate
+    : (state.worlds && state.worlds[w.id] && state.worlds[w.id].restoredDate)));
 }
 export function prestigeGain(state) {
   return Math.max(1, Math.round(state.stageReached * 2 + livingCount(state) * 0.3 + avgMeter(state) * 4));

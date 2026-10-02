@@ -3,7 +3,7 @@
 // world you've reached to switch to it and tend it. Locked worlds show what
 // unlocks them. Ties the progression to the real-tree mission.
 import { WORLDS } from './world.js';
-import { STAGES, legacyBonus, worldIncome } from './game.js';
+import { STAGES, legacyBonus, worldIncome, allWorldsRestored } from './game.js';
 
 const BIOME_ICON = { desert: '🏜️', savanna: '🌾', highland: '⛰️', tropical: '🌴' };
 
@@ -53,7 +53,13 @@ export function createWorldMap(state, { onSwitch, onOpenGrove } = {}) {
     const worlds = state.worlds || {};
     const lb = legacyBonus(state);
     let prevReached = true; // the first world is always reachable
-    list.innerHTML = WORLDS.map((w) => {
+    // Finale note when every land is restored — the accomplishment made explicit.
+    const finaleHtml = allWorldsRestored(state) ? `
+      <div class="wm-finale">
+        🌍 <b>Every land restored</b><br>The planet is green again.
+        <small>${state.forests || 0} forest${(state.forests || 0) === 1 ? '' : 's'} · ${state.legacy || 0} 🌿 legacy · a real tree outlives them all.</small>
+      </div>` : '';
+    list.innerHTML = finaleHtml + WORLDS.map((w) => {
       const active = w.id === state.worldId;
       const snap = worlds[w.id];
       const reached = active || !!snap;
