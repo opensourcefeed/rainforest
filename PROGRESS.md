@@ -241,6 +241,12 @@ confirm-then-celebrate double popup. Making it feel like an idle-game prestige c
       is complete (Rainforest, not yet restored); taps re-open the completion modal, so after
       dismissing it the player returns without digging in the Upgrades shop. Top-centre at
       safe-top+150px, clear of the eco panel / stacked buttons; respects reduced-motion.
-- [ ] **P3 — copy/sound polish + cleanup.** Finalize wording; delete dead prestige.js.
+- [x] **P3 — copy/sound polish + cleanup.** Deleted the dead src/prestige.js (the old confirm
+      modal) and its now-unused CSS (kept `.prestige-card-btn` — the shop card). Completion modal
+      uses fanfare on open / advance on confirm; toast on carry-on.
 
-Next: P3 (polish + cleanup), then real-device playtest of pan/zoom + big grids.
+**Phase C complete** — world completion now reads as an idle-game prestige climax: it auto-raises
+one celebratory "carry on" modal the moment a world is whole, a glowing banner persists if you
+stay, and the old shop-buried confirm→celebrate double popup is gone.
+
+Next: real-device playtest of the new completion flow + pan/zoom + big grids.
