@@ -234,6 +234,12 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       point) and pans; grids that already fit lock at zoom 1 (identity — world-0 unchanged).
       tileCenter is now base/pre-camera; plotAt/iconAt invert the camera. Verified headless
       (all grids fit at z1; clamp keeps backdrop covering at max pan).
+- [x] **B7 — HUD overlap fixes (from screenshot).** (1) Rain badge was centred at top and
+      collided with the right-anchored water counter → moved to the top-right status column
+      (under 💧/🌱, clear of the round buttons). (2) The hint line and plant selector were
+      independently bottom-anchored and overlapped when both wrapped → wrapped selector + hint +
+      actions in one bottom flex column (`.hud-bottom`) so they stack without overlap at any
+      size; the hint is now part of the measured control reserve.
 
 ## Phase C — natural world-completion flow
 World completion was buried (a card inside the Upgrades shop) and showed a redundant

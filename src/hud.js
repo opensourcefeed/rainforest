@@ -108,7 +108,13 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
 
   actions.append(collect, shopBtn, goalsBtn);
 
-  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, mapBtn, carry, types, hint, actions);
+  // Bottom controls stack in one column (selector → hint → actions) so they can
+  // never overlap, however much the selector or hint wraps.
+  const bottom = document.createElement('div');
+  bottom.className = 'hud-bottom';
+  bottom.append(types, hint, actions);
+
+  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, mapBtn, carry, bottom);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');
