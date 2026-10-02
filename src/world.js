@@ -54,12 +54,13 @@ export const WORLDS = [
     // Twist: harsher sun — seedlings survive a little less, so nurse plants and
     // upgrades matter more here.
     mods: { survivalBonus: -0.05, growthMul: 1, thirstMul: 1.3 },
+    // Golden savanna: warm amber grassland that greens to a warm, olive forest.
     palettes: [
-      { skyTop: [150, 178, 200], skyBot: [236, 206, 150], grTop: [214, 168, 104], grBot: [176, 120, 64] },
-      { skyTop: [156, 186, 196], skyBot: [222, 206, 158], grTop: [190, 172, 98], grBot: [150, 132, 70] },
-      { skyTop: [148, 188, 202], skyBot: [206, 214, 168], grTop: [150, 168, 78], grBot: [104, 124, 52] },
-      { skyTop: [136, 184, 202], skyBot: [190, 210, 176], grTop: [104, 146, 64], grBot: [66, 104, 46] },
-      { skyTop: [126, 178, 198], skyBot: [176, 206, 180], grTop: [64, 124, 56], grBot: [40, 90, 42] },
+      { skyTop: [170, 180, 188], skyBot: [240, 214, 150], grTop: [224, 176, 92],  grBot: [186, 132, 58] },
+      { skyTop: [168, 184, 190], skyBot: [230, 212, 150], grTop: [214, 186, 92],  grBot: [168, 142, 60] },
+      { skyTop: [162, 188, 194], skyBot: [216, 214, 156], grTop: [188, 182, 84],  grBot: [138, 138, 58] },
+      { skyTop: [150, 186, 196], skyBot: [200, 212, 168], grTop: [146, 164, 70],  grBot: [100, 122, 50] },
+      { skyTop: [138, 182, 196], skyBot: [186, 208, 174], grTop: [100, 142, 58],  grBot: [66, 104, 42] },
     ],
     plants: [
       { name: 'Grass tuft', emoji: '🌱', color: '#b7cf5a' },
@@ -78,12 +79,13 @@ export const WORLDS = [
     cols: COLS, rows: ROWS,
     // Twist: cool, dry highland — plants grow a touch slower but rarely thirst.
     mods: { survivalBonus: 0, growthMul: 0.9, thirstMul: 0.6 },
+    // Red-ochre terracotta earth, cool pale sky, greening to terraced hills.
     palettes: [
-      { skyTop: [168, 188, 206], skyBot: [226, 212, 182], grTop: [206, 178, 130], grBot: [168, 134, 88] },
-      { skyTop: [164, 190, 204], skyBot: [212, 210, 184], grTop: [178, 172, 118], grBot: [138, 132, 82] },
-      { skyTop: [150, 190, 206], skyBot: [198, 214, 186], grTop: [128, 164, 86], grBot: [90, 122, 58] },
-      { skyTop: [138, 186, 206], skyBot: [184, 210, 184], grTop: [94, 144, 70], grBot: [60, 102, 50] },
-      { skyTop: [126, 180, 202], skyBot: [170, 206, 188], grTop: [60, 122, 60], grBot: [38, 88, 44] },
+      { skyTop: [182, 194, 206], skyBot: [228, 210, 188], grTop: [198, 118, 74],  grBot: [150, 82, 50] },
+      { skyTop: [178, 194, 206], skyBot: [220, 208, 186], grTop: [190, 130, 80],  grBot: [146, 94, 56] },
+      { skyTop: [168, 192, 206], skyBot: [206, 210, 184], grTop: [162, 140, 78],  grBot: [118, 100, 56] },
+      { skyTop: [150, 188, 206], skyBot: [190, 208, 184], grTop: [116, 142, 72],  grBot: [80, 104, 52] },
+      { skyTop: [134, 182, 204], skyBot: [174, 204, 186], grTop: [74, 124, 62],   grBot: [46, 92, 46] },
     ],
     plants: [
       { name: 'Vetch', emoji: '🌱', color: '#a6cf62' },
@@ -102,12 +104,14 @@ export const WORLDS = [
     cols: COLS, rows: ROWS,
     // Twist: warm and wet — everything grows faster and survives more readily.
     mods: { survivalBonus: 0.05, growthMul: 1.15, thirstMul: 0.7 },
+    // Humid tropics: deep blue sky and rich soil even at the start, to the
+    // deepest, most saturated jungle green of any world.
     palettes: [
-      { skyTop: [150, 184, 206], skyBot: [220, 212, 176], grTop: [196, 170, 120], grBot: [158, 128, 82] },
-      { skyTop: [146, 190, 206], skyBot: [204, 214, 180], grTop: [150, 170, 96], grBot: [104, 128, 60] },
-      { skyTop: [138, 190, 210], skyBot: [192, 216, 186], grTop: [104, 160, 76], grBot: [68, 118, 54] },
-      { skyTop: [128, 186, 208], skyBot: [178, 212, 186], grTop: [74, 140, 66], grBot: [46, 100, 48] },
-      { skyTop: [118, 180, 204], skyBot: [164, 208, 190], grTop: [48, 118, 56], grBot: [30, 84, 44] },
+      { skyTop: [112, 170, 208], skyBot: [198, 208, 172], grTop: [176, 156, 108], grBot: [132, 112, 76] },
+      { skyTop: [108, 172, 208], skyBot: [188, 210, 176], grTop: [128, 158, 90],  grBot: [86, 120, 58] },
+      { skyTop: [102, 170, 210], skyBot: [176, 210, 182], grTop: [88, 150, 72],   grBot: [52, 112, 52] },
+      { skyTop: [94, 166, 210],  skyBot: [162, 206, 184], grTop: [56, 130, 60],   grBot: [34, 98, 46] },
+      { skyTop: [84, 160, 208],  skyBot: [148, 202, 186], grTop: [36, 108, 52],   grBot: [20, 78, 40] },
     ],
     plants: [
       { name: 'Fern', emoji: '🌱', color: '#8fd25a' },
