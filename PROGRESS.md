@@ -169,3 +169,23 @@ with quests for direction and sound for feel. Remaining Phase 1: real art, then 
 - [x] **S55 — Balance pass.** `node tools/balance-sim.mjs`. Compressed tier multipliers,
       softer growth/yield upgrades, cubic diminishing returns. Optimal bot: Scrubland 1.2m →
       Rainforest 7.3m; casual bot: 2.4m → ~10m; late income ~11–16💧/s (was ~35).
+
+## Phase A — Multiple worlds (ongoing progression)
+Plan: `~/.claude/plans/jazzy-churning-otter.md`. Evolve prestige into a chain of real-world
+places you restore one after another; worlds are **switchable** via a World Map and **restored
+worlds produce water passively** into a shared global pool (the endless-idle loop). Global:
+water, upgrades, legacy, stats, daily. Per-world: meters, plots, rain, stage. Phase B (later)
+adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unchanged.
+- [x] **A1 — world.js data + accessors.** WORLDS (Thar Desert → Sahel → Loess Plateau →
+      Atlantic Forest): per-world palettes, plant reskins, grid size, twist mods;
+      activeWorld/setActiveWorld/activeDims/nextWorldId. Additive — nothing wired yet.
+- [ ] **A2 — read active world for dims + cosmetics.** Replace GRID.cols/rows reads
+      (state/layout/game/render) with activeDims(); point render palette + plant name/emoji/
+      color at the active world. Behaviour-preserving (world 0 == today's desert).
+- [ ] **A3 — state/save global/per-world split.** `worlds` map + `worldId`; migrate flat saves.
+- [ ] **A4 — completeWorld** (evolve doPrestige; keep water/upgrades, stamp restoredDate, switch).
+- [ ] **A5 — shop "Restore the next land" entry + confirm.**
+- [ ] **A6 — per-world twist** in survival/growth/thirst formulas.
+- [ ] **A7 — idle income** from restored worlds (live + offline) + HUD passive rate.
+- [ ] **A8 — World Map overlay = switch hub** (🗺️).
+- [ ] **A9 — world-complete celebration.**
