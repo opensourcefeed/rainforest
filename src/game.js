@@ -10,7 +10,7 @@ export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
 export const PLANT_TYPES = [
   { id: 'seed',   name: 'Hardy seed', emoji: '🌱', cost: 2,  minStage: 0, meterMul: 1.0, yieldMul: 0.0, growTime: 20, color: '#9ad152', size: 1.0 },
   { id: 'cactus', name: 'Cactus',     emoji: '🌵', cost: 6,  minStage: 1, meterMul: 1.5, yieldMul: 0.4, growTime: 22, color: '#3fa47e', size: 1.15 },
-  { id: 'shrub',  name: 'Shrub',      emoji: '🌿', cost: 16, minStage: 2, meterMul: 2.1, yieldMul: 0.8, growTime: 26, color: '#6bb63f', size: 1.35 },
+  { id: 'shrub',  name: 'Shrub',      emoji: '🌿', cost: 16, minStage: 2, meterMul: 2.1, yieldMul: 0.8, growTime: 26, color: '#6bb63f', size: 1.2 },
   { id: 'tree',   name: 'Tree',       emoji: '🌳', cost: 40, minStage: 3, meterMul: 2.8, yieldMul: 1.3, growTime: 32, color: '#3f8f37', size: 1.7 },
   { id: 'canopy', name: 'Canopy',     emoji: '🌴', cost: 95, minStage: 4, meterMul: 3.6, yieldMul: 1.9, growTime: 40, color: '#2a6f2e', size: 2.1 },
 ];

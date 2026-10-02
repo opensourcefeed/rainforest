@@ -689,11 +689,11 @@ const SHAPES = {
     }
   },
   shrub(ctx, cx, baseY, s, color, rim) {
-    const r = s * 0.5; // squat, wide, no trunk
-    blob(ctx, cx - r * 0.85, baseY - r * 0.4, r * 0.66, color, rim);
-    blob(ctx, cx + r * 0.85, baseY - r * 0.4, r * 0.66, color, rim);
-    blob(ctx, cx, baseY - r * 0.95, r * 0.72, color, rim);
-    blob(ctx, cx, baseY - r * 0.5, r * 0.9, color, rim);
+    const r = s * 0.4; // compact bush, no trunk
+    blob(ctx, cx - r * 0.72, baseY - r * 0.4, r * 0.6, color, rim);
+    blob(ctx, cx + r * 0.72, baseY - r * 0.4, r * 0.6, color, rim);
+    blob(ctx, cx, baseY - r * 0.9, r * 0.66, color, rim);
+    blob(ctx, cx, baseY - r * 0.48, r * 0.8, color, rim);
   },
   tree(ctx, cx, baseY, s, color, rim) {
     const trunkH = s * 0.5, tw = Math.max(2.5, s * 0.13);
