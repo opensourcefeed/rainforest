@@ -183,7 +183,10 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       (state/layout/game/render/main) now go through activeDims(); render scene palette reads
       activeWorld().palettes; new game.plantCosmetic() feeds render/HUD/celebrate the per-world
       plant name/emoji/color. Behaviour-preserving (world 0 == today's desert; verified).
-- [ ] **A3 — state/save global/per-world split.** `worlds` map + `worldId`; migrate flat saves.
+- [x] **A3 — state/save global/per-world split.** Global pool (water/upgrades/legacy/stats/
+      daily/quests) + per-world `worlds` map keyed by `worldId`; freshPlots/activeSnapshot/
+      applySnapshot helpers; loadGame migrates old flat saves. Verified headless (round-trip,
+      multi-world, migration). Still one active world — invisible.
 - [ ] **A4 — completeWorld** (evolve doPrestige; keep water/upgrades, stamp restoredDate, switch).
 - [ ] **A5 — shop "Restore the next land" entry + confirm.**
 - [ ] **A6 — per-world twist** in survival/growth/thirst formulas.

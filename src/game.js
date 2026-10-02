@@ -1,7 +1,8 @@
 // Gameplay rules and actions. state.js holds data + geometry; this holds the
 // verbs and the per-frame world update.
 import { STARTER_PLOTS } from './config.js';
-import { activeDims, activeWorld } from './world.js';
+import { activeDims, activeWorld, nextWorldId } from './world.js';
+import { activeSnapshot, applySnapshot } from './state.js';
 
 export const SEED_COST = 2; // starting seed cost (also PLANT_TYPES[0].cost)
 
@@ -44,36 +45,45 @@ export function selectedType(state) {
   return TYPE_BY_ID[state.selectedType] || PLANT_TYPES[0];
 }
 
-// --- Prestige: "plant a new forest" for a permanent legacy boost -----------
-// Legacy persists across forests and speeds every future one, so completing a
-// forest is worth starting over — the long-term loop (and the real-tree theme).
+// --- Worlds: restore this land, then move on to the next -------------------
+// Completing a world (reaching Rainforest) grants permanent legacy and leaves
+// the world RESTORED — it stays in the save producing water passively (idle
+// income, A7) — then unlocks the next real-world place. Legacy and the global
+// water/upgrades pool carry across all worlds (the long-term loop + the
+// real-tree theme: "you healed this land; now heal another").
 export function legacyBonus(state) {
   return 1 + (state.legacy || 0) * 0.03; // +3% growth/yield per legacy
 }
 export function canPrestige(state) {
-  return state.stageReached >= 4; // reached Rainforest
+  return state.stageReached >= 4 && !state.restoredDate; // Rainforest, not yet restored
 }
 export function prestigeGain(state) {
   return Math.max(1, Math.round(state.stageReached * 2 + livingCount(state) * 0.3 + avgMeter(state) * 4));
 }
-export function doPrestige(state) {
-  if (!canPrestige(state)) return 0;
+
+// Restore the current world and advance to the next. Returns
+// { gain, restoredId, nextId } or null if not eligible. `today` is a local
+// 'YYYY-MM-DD' string stamped as the restoration date. Water and upgrades are
+// KEPT (no reset) — only the per-world forest moves on.
+export function completeWorld(state, today) {
+  if (!canPrestige(state)) return null;
   const gain = prestigeGain(state);
+  const restoredId = state.worldId;
   state.legacy = (state.legacy || 0) + gain;
   state.forests = (state.forests || 0) + 1;
-  // Reset the run (legacy, forests, lifetime stats are kept).
-  state.water = START_WATER;
-  state.meters = { soil: 0, shade: 0, humidity: 0 };
-  state.selectedType = 'seed';
-  state.stageReached = 0;
-  state.milestone = null;
-  state.rain = { unlocked: false, active: false, timer: 0, intensity: 0 };
-  state.upgrades = {};
-  state.fx = [];
-  state.plots.forEach((p, i) => { p.unlocked = i < STARTER_PLOTS; p.planted = false; p.plant = null; });
-  state.quests = [];
-  initQuests(state);
-  return gain;
+  state.restoredDate = today || null;
+  // Freeze the now-restored world into the map so it keeps producing income.
+  state.worlds[restoredId] = activeSnapshot(state);
+
+  const nextId = nextWorldId(restoredId);
+  if (nextId) {
+    const existing = state.worlds[nextId];
+    applySnapshot(state, nextId, existing || { restoredDate: null }); // switch active
+    if (!existing) state.worlds[nextId] = activeSnapshot(state);
+    state.quests = [];
+    initQuests(state); // fresh goals for the new land
+  }
+  return { gain, restoredId, nextId };
 }
 
 // --- Daily gift: a reason to come back each day --------------------------

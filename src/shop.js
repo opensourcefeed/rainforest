@@ -1,6 +1,7 @@
 // Upgrades shop overlay — spend water on permanent boosts, and (once eligible)
 // "plant a new forest" for permanent legacy.
 import { UPGRADES, upgradeLevel, upgradeCost, buyUpgrade, canPrestige, prestigeGain, legacyBonus } from './game.js';
+import { nextWorldId, worldById } from './world.js';
 
 export function createShop(state, onBuy, onPrestige) {
   const overlay = document.createElement('div');
@@ -30,10 +31,13 @@ export function createShop(state, onBuy, onPrestige) {
   // Build the structure once (persists so buttons stay clickable on desktop).
   function render() {
     lastEligible = canPrestige(state);
+    const next = worldById(nextWorldId(state.worldId));
+    const hasNext = !!nextWorldId(state.worldId);
+    const title = hasNext ? 'Restore the Next Land' : 'Complete This Forest';
     const prestigeCard = lastEligible ? `
       <button type="button" class="prestige-card-btn" id="shop-prestige">
-        <span class="pc-ic">🌳</span>
-        <span class="pc-info"><b>Plant a New Forest</b><small id="shop-pc-sub"></small></span>
+        <span class="pc-ic">🌍</span>
+        <span class="pc-info"><b>${title}</b><small id="shop-pc-sub"></small></span>
         <span class="pc-go">→</span>
       </button>` : '';
     list.innerHTML = prestigeCard + UPGRADES.map((u) => {
@@ -58,7 +62,13 @@ export function createShop(state, onBuy, onPrestige) {
     legacyEl.textContent = state.legacy || 0;
     if (canPrestige(state) !== lastEligible) { render(); return; } // eligibility flipped
     const sub = list.querySelector('#shop-pc-sub');
-    if (sub) sub.textContent = `Reset for +${prestigeGain(state)} 🌿 legacy (permanent boost)`;
+    if (sub) {
+      const nextId = nextWorldId(state.worldId);
+      const next = worldById(nextId);
+      sub.textContent = nextId
+        ? `+${prestigeGain(state)} 🌿 legacy · next: ${next.place}, ${next.region}`
+        : `+${prestigeGain(state)} 🌿 legacy · the final forest`;
+    }
     for (const u of UPGRADES) {
       const row = list.querySelector(`[data-uid="${u.id}"]`);
       if (!row) continue;

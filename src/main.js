@@ -4,7 +4,7 @@ import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt, iconAt, tileCenter } from './state.js';
 import { activeDims } from './world.js';
 import { computeLayout, L } from './layout.js';
-import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, doPrestige, claimDaily, markDailyStart } from './game.js';
+import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, completeWorld, claimDaily, markDailyStart } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
 import { createShop } from './shop.js';
@@ -48,8 +48,16 @@ function manRest() {
 
 // Manually fetching water from jugs — the early gameplay action.
 // Becomes renewable via rain later. Amount tuned in the feel pass (S10).
+const localDay = (t) => new Date(t).toLocaleDateString('en-CA'); // YYYY-MM-DD
 const prestige = createPrestige(state, () => {
-  if (doPrestige(state)) { sfx.fanfare(); save(); }
+  const res = completeWorld(state, localDay(Date.now()));
+  if (res) {
+    sfx.fanfare();
+    // The forest moved to a new (or restored) land: reset the walker and relayout.
+    man.queue.length = 0; man.lastIdx = null; man.moving = false;
+    scheduleLayout();
+    save();
+  }
 });
 const shop = createShop(state, () => sfx.upgrade(), () => prestige.show());
 const quests = createQuests(state, () => sfx.upgrade());
