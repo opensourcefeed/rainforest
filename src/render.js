@@ -1,7 +1,7 @@
 // Draws the world in design-unit coordinates. The caller sets the canvas
 // Draws the world in screen pixels using the adaptive layout (see layout.js).
 import { tileCenter, plantHeight } from './state.js';
-import { L } from './layout.js';
+import { L, applyCamera } from './layout.js';
 import { avgMeter, unlockCost, STAGES, TYPE_BY_ID, PLANT_TYPES, tileBonus, plantCosmetic } from './game.js';
 import { activeDims, activeWorld } from './world.js';
 
@@ -300,7 +300,12 @@ export function renderBackdrop(ctx, state, now = 0) {
   const avg = avgMeter(state);
   const time = now / 1000;
 
+  // Clear the real canvas in screen space, then draw the whole backdrop through
+  // the world camera so it zooms and pans in lock-step with the grid. The base
+  // image is window-sized and the camera clamp keeps it covering the screen.
   ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  applyCamera(ctx);
   ctx.drawImage(staticBackdrop(avg), 0, 0, w, h);
   drawWater(ctx, w, hy, h, avg, time);
 
@@ -316,6 +321,7 @@ export function renderBackdrop(ctx, state, now = 0) {
     ctx.fillRect(0, 0, w, h);
     drawRain(ctx, w, h, time, 0, rainI);
   }
+  ctx.restore();
 }
 
 export function renderScene(ctx, state, now = 0, man = null) {
@@ -324,8 +330,16 @@ export function renderScene(ctx, state, now = 0, man = null) {
   const avg = avgMeter(state); // 0 desert .. 1 rainforest
 
   // Transparent play field — the full-window backdrop shows through. Only the
-  // interactive isometric grid, its plants, the man and feedback live here.
+  // interactive isometric grid, its plants, the man and feedback live here, and
+  // they are drawn through the SAME world camera as the backdrop so the whole
+  // scene zooms/pans as one.
   ctx.clearRect(0, 0, w, h);
+  ctx.save();
+  applyCamera(ctx);
+
+  // Visible region in base space (for culling), since tiles are drawn pre-camera.
+  const vx0 = -L.camX / L.zoom, vx1 = (w - L.camX) / L.zoom;
+  const vy0 = -L.camY / L.zoom, vy1 = (h - L.camY) / L.zoom;
 
   // Planting plots — isometric soil blocks, drawn back-to-front so nearer tiles
   // and taller plants overlap farther ones correctly. Tops green with progress.
@@ -340,8 +354,9 @@ export function renderScene(ctx, state, now = 0, man = null) {
   const ordered = [...state.plots].sort((a, b) => (a.col + a.row) - (b.col + b.row));
   for (const p of ordered) {
     const c = tileCenter(p.col, p.row);
-    // Cull tiles well outside the viewport (big pannable grids draw far fewer).
-    if (c.x < -2 * tw || c.x > w + 2 * tw || c.y < horizonY - 4 * th || c.y > h + 4 * th) continue;
+    // Cull tiles well outside the visible base region (zoomed-in grids draw far
+    // fewer). Generous vertical margin so tall plants above a tile still draw.
+    if (c.x < vx0 - 2 * tw || c.x > vx1 + 2 * tw || c.y < vy0 - 6 * th || c.y > vy1 + 4 * th) continue;
 
     if (!p.unlocked) {
       // Locked desert: a flat dim diamond with its buy price.
@@ -412,6 +427,8 @@ export function renderScene(ctx, state, now = 0, man = null) {
   // Rain streaks over the platform (the backdrop rains on the wider scene).
   const rainI = (state.rain && state.rain.intensity) || 0;
   if (rainI > 0.01) drawRain(ctx, w, h, time, 0, rainI);
+
+  ctx.restore(); // back to screen space for the HUD footing band
 
   // Bottom control band — a subtle darkening so the HUD buttons have a footing.
   const bandH = L.reserve;

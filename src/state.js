@@ -93,9 +93,16 @@ export function applySnapshot(state, id, snap) {
   state.milestone = null;
 }
 
-// Screen (CSS px) center of a tile, from the adaptive layout (+ camera pan).
+// Base-space (CSS px, pre-camera) center of a tile. Drawing happens through the
+// camera transform (see layout.applyCamera), so this stays camera-independent;
+// input code inverts the camera via screenToBase() before hit-testing.
 export function tileCenter(col, row) {
-  return { x: L.ox + L.camX + (col - row) * L.tw, y: L.oy + L.camY + (col + row) * L.th };
+  return { x: L.ox + (col - row) * L.tw, y: L.oy + (col + row) * L.th };
+}
+
+// A screen (CSS px) point mapped back into base space: base = (screen - cam)/zoom.
+function screenToBase(x, y) {
+  return { x: (x - L.camX) / L.zoom, y: (y - L.camY) / L.zoom };
 }
 
 // Drawn height (px) of a plant. Kept short (a bit over one tile) so tall tiers
@@ -111,12 +118,13 @@ export function plantHeight(plant) {
 // should hit that plant (checked before the ground tile). Returns index or -1.
 export function iconAt(state, x, y) {
   const r = 16 * L.unit;
+  const b = screenToBase(x, y); // compare in base space (where tileCenter lives)
   for (let i = 0; i < state.plots.length; i++) {
     const pl = state.plots[i].plant;
     if (!pl || pl.status !== 'alive' || !(pl.ripe || pl.thirsty)) continue;
     const c = tileCenter(state.plots[i].col, state.plots[i].row);
     const iy = c.y - plantHeight(pl) - 8 * L.unit;
-    if ((x - c.x) ** 2 + (y - iy) ** 2 <= r * r) return i;
+    if ((b.x - c.x) ** 2 + (b.y - iy) ** 2 <= r * r) return i;
   }
   return -1;
 }
@@ -125,7 +133,8 @@ export function iconAt(state, x, y) {
 // (inverse iso transform), so EVERY tile is tappable by its own diamond
 // regardless of what's planted on neighbouring tiles.
 export function plotAt(state, x, y) {
-  const px = x - L.ox - L.camX, py = y - L.oy - L.camY;
+  const b = screenToBase(x, y);
+  const px = b.x - L.ox, py = b.y - L.oy;
   const col = Math.round((px / L.tw + py / L.th) / 2);
   const row = Math.round((py / L.th - px / L.tw) / 2);
   const { cols, rows } = activeDims();

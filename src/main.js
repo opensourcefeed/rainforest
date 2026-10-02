@@ -3,7 +3,7 @@
 import { MAX_DPR, CONTROL_BAND } from './config.js';
 import { plotAt, iconAt, tileCenter, activeSnapshot } from './state.js';
 import { activeDims } from './world.js';
-import { computeLayout, applyZoomPan, clampCam, L } from './layout.js';
+import { computeLayout, setZoom, clampCam, L } from './layout.js';
 import { actOnTile, tileAction, updateWorld, survivalChance, collectAmount, initQuests, completeWorld, claimDaily, markDailyStart } from './game.js';
 import { renderScene, renderBackdrop } from './render.js';
 import { createHud } from './hud.js';
@@ -290,7 +290,7 @@ function updateDebug(now) {
   const m = state.meters;
   debugEl.textContent =
     `win ${L.w}x${L.h}  dpr ${view.dpr}\n` +
-    `tile ${L.tw.toFixed(0)}  unit ${L.unit.toFixed(2)}  reserve ${L.reserve.toFixed(0)}\n` +
+    `tile ${L.tw.toFixed(0)}  unit ${L.unit.toFixed(2)}  zoom ${L.zoom.toFixed(2)}  reserve ${L.reserve.toFixed(0)}\n` +
     `insets t${i.t} r${i.r} b${i.b} l${i.l}\n` +
     `soil ${m.soil.toFixed(2)} shade ${m.shade.toFixed(2)} humid ${m.humidity.toFixed(2)}\n` +
     `survival ${(survivalChance(state) * 100).toFixed(0)}%  fps ${fps}`;
@@ -338,9 +338,11 @@ canvas.addEventListener('pointermove', (e) => {
   if (pinch && pointers.size >= 2) {
     const [a, b] = [...pointers.values()];
     const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    L.zoom = pinch.startZoom * (dist / pinch.startDist);
-    L.zoom = Math.max(L.minZoom, Math.min(L.maxZoom, L.zoom));
-    applyZoomPan();
+    // Zoom about the pinch midpoint (in canvas/screen px) so the scene grows
+    // under the fingers, backdrop and grid together.
+    const r = canvas.getBoundingClientRect();
+    const fx = (a.x + b.x) / 2 - r.left, fy = (a.y + b.y) / 2 - r.top;
+    setZoom(pinch.startZoom * (dist / pinch.startDist), fx, fy);
     return;
   }
 
@@ -368,7 +370,7 @@ function endPointer(e) {
     if (e.clientX < 70 && e.clientY < 44) { toggleDebug(); drag = null; return; }
     const now = performance.now();
     if (now - lastTapT < 300 && L.maxZoom > 1) {
-      doubleTapZoom(); // quick zoom toggle on pannable grids
+      doubleTapZoom(eventToScreen(e)); // quick zoom toggle, about the tap point
     } else {
       tapTile(eventToScreen(e));
     }
@@ -391,11 +393,11 @@ function tapTile(p) {
   if (tileAction(state, plotIndex) && man.queue.length < 8) man.queue.push(plotIndex);
 }
 
-// Double-tap toggles between fit-out and a zoomed-in view (pannable grids only).
-function doubleTapZoom() {
-  const zoomedIn = L.zoom > (L.minZoom + L.maxZoom) / 2;
-  L.zoom = zoomedIn ? L.minZoom : L.maxZoom;
-  applyZoomPan();
+// Double-tap toggles between the full-fit view and a zoomed-in view, about the
+// tap point (only meaningful when the grid can zoom, i.e. maxZoom > 1).
+function doubleTapZoom(p) {
+  const target = L.zoom > (L.minZoom + L.maxZoom) / 2 ? L.minZoom : L.maxZoom;
+  setZoom(target, p ? p.x : L.w / 2, p ? p.y : L.h / 2);
 }
 
 let relayoutQueued = false;

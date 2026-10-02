@@ -226,6 +226,14 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       stretched over the larger plot count — both make world 0 (20t) mathematically unchanged.
 - [x] **B5 — bigger per-world grids.** 4×5 → 5×6 → 6×7 → 6×8. Sim: Rainforest 12.3→14.3m across
       worlds (normalised pacing holds); world-0 balance sim byte-identical.
+- [x] **B6 — unified world camera (whole scene zooms/pans).** Was: only the grid carried
+      zoom/pan; the backdrop (sky/ground/sun/grass/water/wildlife/clouds) stayed fixed. Now one
+      camera transform (`screen = base*zoom + cam`, layout.applyCamera) is applied to BOTH
+      canvases, with the grid laid out to FIT the whole board at zoom 1 so the window-sized
+      backdrop always covers when scaled. Player zooms IN (pinch / double-tap, about the focal
+      point) and pans; grids that already fit lock at zoom 1 (identity — world-0 unchanged).
+      tileCenter is now base/pre-camera; plotAt/iconAt invert the camera. Verified headless
+      (all grids fit at z1; clamp keeps backdrop covering at max pan).
 
 ## Phase C — natural world-completion flow
 World completion was buried (a card inside the Upgrades shop) and showed a redundant
