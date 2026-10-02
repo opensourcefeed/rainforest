@@ -197,5 +197,8 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
 - [x] **A7 — idle income.** worldIncome()/totalIdleIncome() — restored worlds pour water into
       the global pool (active world excluded to avoid double count); added in updateWorld (live +
       offline) and folded into waterRate so the HUD +/s shows it. Verified headless.
-- [ ] **A8 — World Map overlay = switch hub** (🗺️).
+- [x] **A8 — World Map overlay = switch hub** (🗺️). src/worldmap.js lists restored ✓ (date +
+      income), active ("Here"), in-progress, and locked worlds; tap a reached world to switch via
+      game.switchWorld (commit active → applySnapshot). Real-tree tie-in + Real Grove link.
+      Verified headless (switch round-trip preserves per-world state; same/unreached blocked).
 - [ ] **A9 — world-complete celebration.**

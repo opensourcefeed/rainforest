@@ -15,7 +15,8 @@ import { loadGame, saveGame, clearSave } from './save.js';
 import { createSettings } from './settings.js';
 import { createGrove } from './grove.js';
 import { createWorldMap } from './worldmap.js';
-import { switchWorld } from './game.js';
+import { switchWorld, worldIncome, legacyBonus } from './game.js';
+import { worldById } from './world.js';
 import { showDaily } from './daily.js';
 import { initOnboarding } from './onboarding.js';
 import { showLoader } from './loader.js';
@@ -54,11 +55,22 @@ const localDay = (t) => new Date(t).toLocaleDateString('en-CA'); // YYYY-MM-DD
 const prestige = createPrestige(state, () => {
   const res = completeWorld(state, localDay(Date.now()));
   if (res) {
-    sfx.fanfare();
     // The forest moved to a new (or restored) land: reset the walker and relayout.
     man.queue.length = 0; man.lastIdx = null; man.moving = false;
     scheduleLayout();
     save();
+    // Big payoff: pause and show the world-restored celebration.
+    const restored = state.worlds[res.restoredId];
+    const next = res.nextId ? worldById(res.nextId) : null;
+    paused = true;
+    celebrate.showWorld({
+      restoredPlace: worldById(res.restoredId).place,
+      income: worldIncome(restored, legacyBonus(state)),
+      gain: res.gain,
+      nextPlace: next ? next.place : null,
+      nextRegion: next ? next.region : null,
+      nextBlurb: next ? next.blurb : null,
+    });
   }
 });
 const shop = createShop(state, () => sfx.upgrade(), () => prestige.show());

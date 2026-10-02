@@ -84,5 +84,41 @@ export function createCelebration({ onContinue }) {
         onContinue();
       }, { once: true });
     },
+
+    // A bigger payoff than a stage: a whole world restored. `info` is built by
+    // main.js: { restoredPlace, income, gain, nextPlace, nextRegion, nextBlurb }.
+    // nextPlace is null when the final world has been restored.
+    showWorld(info) {
+      const hasNext = !!info.nextPlace;
+      const nextHtml = hasNext
+        ? `<div class="celebrate-unlock">🌏 New land: <b>${info.nextPlace}</b>, ${info.nextRegion}
+             <br><small>${info.nextBlurb}</small></div>`
+        : `<div class="celebrate-unlock">🌏 <b>Every land restored.</b> The planet is green again.</div>`;
+      overlay.innerHTML = `
+        <div class="confetti">${confetti()}</div>
+        <div class="celebrate-card">
+          <div class="celebrate-emoji">🌍</div>
+          <div class="celebrate-kicker">World restored</div>
+          <h2 class="celebrate-title">${info.restoredPlace}</h2>
+          <p class="celebrate-line">You brought this whole land back to life.</p>
+          <p class="celebrate-tip">🌱 It now grows water on its own · +${info.income.toFixed(1)}/s 💧</p>
+          ${nextHtml}
+          <div class="celebrate-reward">Reward: +${info.gain} 🌿 legacy</div>
+          <div class="celebrate-real"><span>🌱 In the real world</span>${
+            hasNext
+              ? 'One land healed here. Go plant one real tree — it outlives this whole game.'
+              : 'You finished the game. The real forest is still waiting — plant a tree today.'
+          }</div>
+          <button type="button" class="celebrate-btn">${hasNext ? `Begin ${info.nextPlace}` : 'Finish'}</button>
+        </div>`;
+      overlay.hidden = false;
+      sfx.fanfare();
+      overlay.querySelector('.celebrate-btn').addEventListener('click', () => {
+        sfx.advance();
+        overlay.hidden = true;
+        overlay.innerHTML = '';
+        onContinue();
+      }, { once: true });
+    },
   };
 }
