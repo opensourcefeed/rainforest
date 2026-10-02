@@ -82,6 +82,36 @@ html, body {
   pointer-events: none;
 }
 
+/* Persistent "carry on" CTA — top-centre, clear of the eco panel (left) and the
+   stacked round buttons (right), glowing so it reads as the next big step. */
+.hud-carry {
+  position: absolute;
+  top: calc(var(--safe-t) + 150px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(84vw, 300px);
+  padding: 10px 18px;
+  border: 1.5px solid rgba(255, 236, 160, 0.9);
+  border-radius: 999px;
+  background: linear-gradient(165deg, #3f7a39, #2c5a28);
+  color: #fff6df;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: carryPulse 1.8s ease-in-out infinite;
+}
+.hud-carry[hidden] { display: none; }
+.hud-carry:active { transform: translateX(-50%) translateY(1px); filter: brightness(0.96); }
+@keyframes carryPulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(255, 221, 120, 0.5); }
+  50% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 7px rgba(255, 221, 120, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .hud-carry { animation: none; } }
+
 .hud-stage.flash { animation: stageFlash 1.4s ease-out; transform-origin: left center; }
 @keyframes stageFlash {
   0% { transform: scale(1.25); background: rgba(79, 175, 71, 0.85); }

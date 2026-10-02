@@ -126,6 +126,7 @@ const hud = createHud({
   onOpenSettings() { settings.open(); },
   onOpenGrove() { grove.open(); },
   onOpenMap() { worldmap.open(); },
+  onCarryOn() { showCompletion(); },
   // Selector height changes when a new tier unlocks; re-measure the reserve.
   onLayoutChange() { scheduleLayout(); },
 });

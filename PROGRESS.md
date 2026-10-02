@@ -237,8 +237,10 @@ confirm-then-celebrate double popup. Making it feel like an idle-game prestige c
       pop. Per-world `completionPromptSeen` (persisted) makes it auto-pop once, not every resume.
       Shop card re-opens the same modal. Economy unchanged (balance sim identical; the stage
       water bonus is still granted).
-- [ ] **P2 — persistent "carry on" banner.** Glowing HUD banner when eligible + dismissed,
-      re-opening the completion modal (replaces digging in the Upgrades shop). Safe-area aware.
+- [x] **P2 — persistent "carry on" banner.** Glowing top-centre HUD CTA shown whenever a world
+      is complete (Rainforest, not yet restored); taps re-open the completion modal, so after
+      dismissing it the player returns without digging in the Upgrades shop. Top-centre at
+      safe-top+150px, clear of the eco panel / stacked buttons; respects reduced-motion.
 - [ ] **P3 — copy/sound polish + cleanup.** Finalize wording; delete dead prestige.js.
 
-Next: P2 (persistent banner), then real-device playtest of pan/zoom + big grids.
+Next: P3 (polish + cleanup), then real-device playtest of pan/zoom + big grids.

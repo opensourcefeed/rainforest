@@ -2,9 +2,9 @@
 // Built in DOM rather than canvas so tap targets stay crisp and physically
 // sized on every screen. Elements opt back into pointer events individually.
 
-import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, plantCosmetic, SHOVEL } from './game.js';
+import { currentStage, stageProgress, livingCount, waterRate, availableTypes, plantCost, anyClaimable, plantCosmetic, canPrestige, SHOVEL } from './game.js';
 
-export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings, onOpenGrove, onOpenMap }) {
+export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpenShop, onOpenQuests, onOpenSettings, onOpenGrove, onOpenMap, onCarryOn }) {
   const root = document.getElementById('hud');
 
   const stage = document.createElement('div');
@@ -57,6 +57,17 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
   mapBtn.textContent = '🗺️';
   mapBtn.addEventListener('click', onOpenMap);
 
+  // Persistent "the world is whole, carry on" CTA. Appears the moment a world is
+  // complete (reached Rainforest, not yet restored) and stays until the player
+  // restores it — so after dismissing the auto-raised completion modal they can
+  // return to it without hunting in the Upgrades shop. Glows to draw the eye.
+  const carry = document.createElement('button');
+  carry.className = 'hud-carry';
+  carry.type = 'button';
+  carry.hidden = true;
+  carry.innerHTML = '🌍 This land is whole — carry on →';
+  if (onCarryOn) carry.addEventListener('click', onCarryOn);
+
   // Plant-type selector — the chosen type is what a soil tap plants. New tiers
   // appear here as stages unlock. Click delegation set once.
   const types = document.createElement('div');
@@ -97,7 +108,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
 
   actions.append(collect, shopBtn, goalsBtn);
 
-  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, mapBtn, types, hint, actions);
+  root.append(stage, rain, eco, water, living, settingsBtn, groveBtn, mapBtn, carry, types, hint, actions);
 
   const waterValue = root.querySelector('#hud-water');
   const rateValue = root.querySelector('#hud-rate');
@@ -149,6 +160,7 @@ export function createHud({ onCollectWater, onSelectType, onLayoutChange, onOpen
       }
 
       rain.hidden = !(state.rain && state.rain.intensity > 0.15);
+      carry.hidden = !canPrestige(state); // world complete, awaiting restoration
       goalsDot.hidden = !anyClaimable(state);
       // Once rain arrives, harvests + rain carry the economy; retire the jug.
       collect.hidden = !!(state.rain && state.rain.unlocked);
