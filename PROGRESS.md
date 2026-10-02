@@ -201,4 +201,9 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
       income), active ("Here"), in-progress, and locked worlds; tap a reached world to switch via
       game.switchWorld (commit active → applySnapshot). Real-tree tie-in + Real Grove link.
       Verified headless (switch round-trip preserves per-world state; same/unreached blocked).
-- [ ] **A9 — world-complete celebration.**
+- [x] **A9 — world-complete celebration.** celebrate.showWorld() — restored land + its new
+      +/s income + legacy reward + next land reveal (or "every land restored" finale), with a
+      real-tree nudge. main.js pauses and shows it after completeWorld.
+
+**Phase A complete** — multiple switchable worlds with idle income are live. Next: real-device
+playtest; then Phase B (bigger drag-to-pan grids + economy rescale + balance-sim pass).
