@@ -1,8 +1,9 @@
 // Persistence + offline/idle progress. localStorage for now (native storage in
 // Phase 2). Every access is wrapped in try/catch: private mode, cleared data,
 // or preview contexts can throw or return null, and the game must still run.
-import { createState } from './state.js';
+import { createState, activeSnapshot, applySnapshot } from './state.js';
 import { updateWorld, currentStage } from './game.js';
+import { FIRST_WORLD_ID } from './world.js';
 
 const SAVE_KEY = 'rainforest.save.v1';
 
@@ -16,19 +17,18 @@ export function saveGame(state) {
   try {
     const payload = {
       t: Date.now(),
+      // --- Global pool (shared across all worlds) ---
       water: state.water,
-      meters: state.meters,
-      selectedType: state.selectedType,
       upgrades: state.upgrades,
       stats: state.stats,
       quests: state.quests,
       legacy: state.legacy,
       forests: state.forests,
       daily: state.daily,
-      stageReached: state.stageReached,
-      plots: state.plots.map((p) => ({
-        col: p.col, row: p.row, unlocked: p.unlocked, planted: p.planted, plant: p.plant,
-      })),
+      // --- Worlds: every unlocked world's full snapshot; the active one is
+      // captured live so the map is always complete. ---
+      worldId: state.worldId,
+      worlds: { ...state.worlds, [state.worldId]: activeSnapshot(state) },
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     return true;
@@ -50,29 +50,43 @@ export function loadGame() {
 
   try {
     const data = JSON.parse(raw);
+    // --- Global pool ---
     if (typeof data.water === 'number') state.water = data.water;
-    if (data.meters) Object.assign(state.meters, data.meters);
-    if (typeof data.selectedType === 'string') state.selectedType = data.selectedType;
     if (data.upgrades && typeof data.upgrades === 'object') state.upgrades = data.upgrades;
     if (data.stats && typeof data.stats === 'object') Object.assign(state.stats, data.stats);
     if (Array.isArray(data.quests)) state.quests = data.quests;
     if (typeof data.legacy === 'number') state.legacy = data.legacy;
     if (typeof data.forests === 'number') state.forests = data.forests;
     if (data.daily && typeof data.daily === 'object') state.daily = data.daily;
-    if (Array.isArray(data.plots) && data.plots.length === state.plots.length) {
-      state.plots = data.plots;
-      // Migrate pre-expansion saves: no `unlocked` field means every plot was
-      // plantable, so unlock them all (don't strand an existing grove).
-      if (state.plots.some((p) => p.unlocked === undefined)) {
-        state.plots.forEach((p) => { p.unlocked = true; });
-      }
-      state.plots.forEach((p) => { if (p.plant && p.plant.v === undefined) p.plant.v = Math.random(); });
+
+    // --- Worlds: new saves carry a `worlds` map; migrate an old flat save
+    // (meters/plots/stageReached/selectedType at top level) into one world. ---
+    let worlds, worldId;
+    if (data.worlds && typeof data.worlds === 'object') {
+      worlds = data.worlds;
+      worldId = worlds[data.worldId] ? data.worldId : FIRST_WORLD_ID;
+    } else {
+      worldId = FIRST_WORLD_ID;
+      worlds = {
+        [worldId]: {
+          meters: data.meters,
+          plots: Array.isArray(data.plots) ? data.plots : null,
+          stageReached: data.stageReached,
+          selectedType: data.selectedType,
+          restoredDate: null,
+        },
+      };
     }
+    if (!worlds[worldId]) worlds[worldId] = {}; // safety — applySnapshot fills gaps
+    state.worlds = worlds;
+    // Make the saved active world live, then tidy its plots.
+    applySnapshot(state, worldId, worlds[worldId]);
+    migratePlots(state.plots);
     // Don't re-grant milestone bonuses for stages already reached. Trust the
     // saved value if present; otherwise seed from the restored environment.
-    state.stageReached = Number.isInteger(data.stageReached)
-      ? data.stageReached
-      : currentStage(state).index;
+    if (!Number.isInteger(worlds[worldId].stageReached)) {
+      state.stageReached = currentStage(state).index;
+    }
 
     const elapsed = Math.max(0, (Date.now() - (data.t || Date.now())) / 1000);
     const capped = Math.min(elapsed, OFFLINE_CAP_SEC);
@@ -86,6 +100,16 @@ export function loadGame() {
     return createState(); // corrupt save — start clean rather than crash
   }
   return state;
+}
+
+// Tidy a restored plot array in place: migrate pre-expansion saves (no
+// `unlocked` field meant every plot was plantable) and backfill per-plant `v`.
+function migratePlots(plots) {
+  if (!Array.isArray(plots)) return;
+  if (plots.some((p) => p.unlocked === undefined)) {
+    plots.forEach((p) => { p.unlocked = true; });
+  }
+  plots.forEach((p) => { if (p.plant && p.plant.v === undefined) p.plant.v = Math.random(); });
 }
 
 // Advance the world by `seconds` in coarse steps (used for idle catch-up).

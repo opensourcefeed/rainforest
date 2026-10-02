@@ -179,9 +179,10 @@ adds bigger drag-to-pan grids. Grids stay 4×5 through Phase A so balance is unc
 - [x] **A1 — world.js data + accessors.** WORLDS (Thar Desert → Sahel → Loess Plateau →
       Atlantic Forest): per-world palettes, plant reskins, grid size, twist mods;
       activeWorld/setActiveWorld/activeDims/nextWorldId. Additive — nothing wired yet.
-- [ ] **A2 — read active world for dims + cosmetics.** Replace GRID.cols/rows reads
-      (state/layout/game/render) with activeDims(); point render palette + plant name/emoji/
-      color at the active world. Behaviour-preserving (world 0 == today's desert).
+- [x] **A2 — read active world for dims + cosmetics.** GRID.cols/rows reads
+      (state/layout/game/render/main) now go through activeDims(); render scene palette reads
+      activeWorld().palettes; new game.plantCosmetic() feeds render/HUD/celebrate the per-world
+      plant name/emoji/color. Behaviour-preserving (world 0 == today's desert; verified).
 - [ ] **A3 — state/save global/per-world split.** `worlds` map + `worldId`; migrate flat saves.
 - [ ] **A4 — completeWorld** (evolve doPrestige; keep water/upgrades, stamp restoredDate, switch).
 - [ ] **A5 — shop "Restore the next land" entry + confirm.**

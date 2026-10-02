@@ -3,20 +3,34 @@
 import { STARTER_PLOTS } from './config.js';
 import { START_WATER, TYPE_BY_ID, PLANT_TYPES } from './game.js';
 import { L } from './layout.js';
-import { activeDims } from './world.js';
+import { activeDims, setActiveWorld, FIRST_WORLD_ID } from './world.js';
 
-
-export function createState() {
-  const plots = [];
+// A fresh set of plots sized to a given world's grid (first STARTER_PLOTS
+// unlocked, the rest locked desert bought with water).
+export function freshPlots(worldId) {
+  setActiveWorld(worldId);
   const { cols, rows } = activeDims();
+  const plots = [];
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      // Start with a small unlocked patch (the first STARTER_PLOTS); the rest
-      // are locked desert bought with water.
       plots.push({ col, row, planted: false, unlocked: plots.length < STARTER_PLOTS });
     }
   }
+  return plots;
+}
+
+export function createState() {
+  setActiveWorld(FIRST_WORLD_ID);
+  const plots = freshPlots(FIRST_WORLD_ID);
   return {
+    // --- Which world is being tended, and saved state for every unlocked one.
+    // GLOBAL fields (water/upgrades/legacy/stats/daily/quests) are shared across
+    // all worlds; PER-WORLD fields (meters/plots/stageReached/selectedType/
+    // restoredDate) live on `state.*` for the active world and are snapshotted
+    // into `worlds[id]` on save or when switching worlds (see save.js, A4/A8).
+    worldId: FIRST_WORLD_ID,
+    worlds: {}, // { [id]: perWorldSnapshot } — filled on save/switch
+    restoredDate: null, // local YYYY-MM-DD this (active) world was restored, else null
     water: START_WATER, // main early currency (jugs). Renewable via rain later.
     // Hidden environment meters, 0..1. Living plants raise them; survival
     // chance reads from them, so the desert bootstraps itself.
@@ -40,6 +54,40 @@ export function createState() {
 
     plots,
   };
+}
+
+// --- Per-world snapshots ---------------------------------------------------
+// The active world's live fields (meters/plots/stageReached/selectedType/
+// restoredDate) are captured into a plain snapshot for `state.worlds` (on save
+// or before switching), and applied back when a world becomes active. Rain is
+// transient — it's re-derived from humidity, not stored.
+
+export function activeSnapshot(state) {
+  return {
+    meters: { ...state.meters },
+    plots: state.plots.map((p) => ({
+      col: p.col, row: p.row, unlocked: p.unlocked, planted: p.planted, plant: p.plant,
+    })),
+    stageReached: state.stageReached,
+    selectedType: state.selectedType,
+    restoredDate: state.restoredDate || null,
+  };
+}
+
+// Make `id` the active world, writing its snapshot into the live fields.
+export function applySnapshot(state, id, snap) {
+  setActiveWorld(id);
+  state.worldId = id;
+  state.meters = { soil: 0, shade: 0, humidity: 0, ...(snap.meters || {}) };
+  state.plots = Array.isArray(snap.plots) && snap.plots.length ? snap.plots : freshPlots(id);
+  state.stageReached = Number.isInteger(snap.stageReached) ? snap.stageReached : 0;
+  state.selectedType = typeof snap.selectedType === 'string' ? snap.selectedType : 'seed';
+  state.restoredDate = snap.restoredDate || null;
+  // Rain + transient effects reset; rain re-derives from humidity next frame.
+  state.rain = { unlocked: false, active: false, timer: 0, intensity: 0 };
+  state.fx = [];
+  state.events = [];
+  state.milestone = null;
 }
 
 // Screen (CSS px) center of a tile, from the adaptive layout.
